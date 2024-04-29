@@ -2,6 +2,8 @@ import { Box, Flex, Icon, Text, useColorModeValue } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { FiBriefcase, FiHome, FiSettings, FiUsers } from "react-icons/fi"
+import { PiGraph } from "react-icons/pi";
+import { TbChartDots3 } from "react-icons/tb";
 
 import type { UserPublic } from "../../client"
 
@@ -9,6 +11,8 @@ const items = [
   { icon: FiHome, title: "Dashboard", path: "/" },
   { icon: FiBriefcase, title: "Items", path: "/items" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
+  { icon: PiGraph, title: "Cytoscape.js", path: "/graph_cytoscape" },
+  { icon: TbChartDots3, title: "D3.js", path: "/graph_d3" },
 ]
 
 interface SidebarItemsProps {
