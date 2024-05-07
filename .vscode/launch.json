@@ -18,6 +18,16 @@
             "envFile": "${workspaceFolder}/.env",
         },
         {
+            "name": "test_kuzu",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/app/graph_db/test_kuzu.py",
+            "cwd": "${workspaceFolder}/backend/app/graph_db/",
+            "console": "integratedTerminal",
+            "env": {
+            },
+        },
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Debug Frontend: Launch Chrome against http://localhost:5173",
