@@ -9,6 +9,9 @@ get-opentapioca-resources:
 start-containers:
 	docker compose up
 
+start-db-container:
+	docker compose up db
+
 stop-containers:
 	docker compose down
 

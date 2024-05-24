@@ -40,6 +40,99 @@ export const $Body_login_login_access_token = {
 	},
 } as const;
 
+export const $DatasetCountSampling = {
+	properties: {
+		count: {
+	type: 'number',
+	isRequired: true,
+	exclusiveMinimum: 0,
+},
+	},
+} as const;
+
+export const $DatasetCreate = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		specifications: {
+	type: 'any-of',
+	contains: [{
+	type: 'DglkeDatasetSpecifications',
+}, {
+	type: 'StixDatasetSpecifications',
+}],
+	isRequired: true,
+},
+		sampling: {
+	type: 'any-of',
+	contains: [{
+	type: 'DatasetRatioSampling',
+}, {
+	type: 'DatasetCountSampling',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DatasetPublic = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DatasetRatioSampling = {
+	properties: {
+		ratio: {
+	type: 'number',
+	isRequired: true,
+	maximum: 1,
+	exclusiveMinimum: 0,
+},
+	},
+} as const;
+
+export const $DatasetSplit = {
+	type: 'Enum',
+	enum: ['train','validation','test',],
+} as const;
+
+export const $DglkeDatasetSpecifications = {
+	properties: {
+		initial_dataset: {
+	type: 'DlgkeAvailableDataset',
+	isRequired: true,
+},
+		splits: {
+	type: 'array',
+	contains: {
+		type: 'DatasetSplit',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DlgkeAvailableDataset = {
+	type: 'Enum',
+	enum: ['KGDatasetFB15k','other',],
+} as const;
+
 export const $HTTPValidationError = {
 	properties: {
 		detail: {
@@ -148,6 +241,16 @@ export const $NewPassword = {
 		new_password: {
 	type: 'string',
 	isRequired: true,
+},
+	},
+} as const;
+
+export const $StixDatasetSpecifications = {
+	properties: {
+		file_content: {
+	type: 'string',
+	isRequired: true,
+	format: 'data-url',
 },
 	},
 } as const;

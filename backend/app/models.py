@@ -1,3 +1,5 @@
+from enum import Enum
+
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -45,6 +47,7 @@ class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner")
+    datasets: list["Dataset"] = Relationship(back_populates="owner")
 
 
 # Properties to return via API, id is always required
@@ -111,3 +114,73 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str
+
+
+class DatasetSplit(str, Enum):
+    train = "train"
+    validation = "validation"
+    test = "test"
+
+
+class DlgkeAvailableDataset(str, Enum):
+    KGDatasetFB15k = "KGDatasetFB15k"
+    other = "other"
+
+
+class DglkeDatasetSpecifications(SQLModel):
+    initial_dataset: DlgkeAvailableDataset
+    splits: list[DatasetSplit] = Field(
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
+        schema_extra={
+            "json_schema_extra": {
+                "uniqueItems": True,
+            }
+        }
+    )
+
+
+class StixDatasetSpecifications(SQLModel):
+    file_content: str = Field(
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
+        schema_extra={
+            "json_schema_extra": {
+                "format": "data-url",
+            }
+        }
+    )
+
+
+class DatasetRatioSampling(SQLModel):
+    ratio: float = Field(gt=0, le=1)
+
+
+class DatasetCountSampling(SQLModel):
+    count: int = Field(gt=0)
+
+
+class DatasetBase(SQLModel):
+    name: str
+
+
+class DatasetCreate(DatasetBase):
+    name: str
+    specifications: DglkeDatasetSpecifications | StixDatasetSpecifications
+    sampling: DatasetRatioSampling | DatasetCountSampling | None
+
+
+class DatasetPublic(DatasetBase):
+    id: int
+    owner_id: int
+
+
+class Dataset(DatasetBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    kuzu_path: str
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="datasets")
+    # specifications
+    specifications_class: str
+    specifications_value: str
+    # sampling
+    sampling_ratio: float | None = Field(gt=0, le=1)
+    sampling_count: int | None = Field(gt=0)

@@ -9,6 +9,49 @@ export type Body_login_login_access_token = {
 
 
 
+export type DatasetCountSampling = {
+	count: number;
+};
+
+
+
+export type DatasetCreate = {
+	name: string;
+	specifications: DglkeDatasetSpecifications | StixDatasetSpecifications;
+	sampling: DatasetRatioSampling | DatasetCountSampling | null;
+};
+
+
+
+export type DatasetPublic = {
+	name: string;
+	id: number;
+	owner_id: number;
+};
+
+
+
+export type DatasetRatioSampling = {
+	ratio: number;
+};
+
+
+
+export type DatasetSplit = 'train' | 'validation' | 'test';
+
+
+
+export type DglkeDatasetSpecifications = {
+	initial_dataset: DlgkeAvailableDataset;
+	splits: Array<DatasetSplit>;
+};
+
+
+
+export type DlgkeAvailableDataset = 'KGDatasetFB15k' | 'other';
+
+
+
 export type HTTPValidationError = {
 	detail?: Array<ValidationError>;
 };
@@ -54,6 +97,12 @@ export type Message = {
 export type NewPassword = {
 	token: string;
 	new_password: string;
+};
+
+
+
+export type StixDatasetSpecifications = {
+	file_content: string;
 };
 
 

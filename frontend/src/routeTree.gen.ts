@@ -20,6 +20,7 @@ import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
 import { Route as LayoutGraphd3Import } from './routes/_layout/graph_d3'
 import { Route as LayoutGraphcytoscapeImport } from './routes/_layout/graph_cytoscape'
+import { Route as LayoutDatasetsImport } from './routes/_layout/datasets'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 
 // Create/Update Routes
@@ -69,6 +70,11 @@ const LayoutGraphcytoscapeRoute = LayoutGraphcytoscapeImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutDatasetsRoute = LayoutDatasetsImport.update({
+  path: '/datasets',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
@@ -96,6 +102,10 @@ declare module '@tanstack/react-router' {
     }
     '/_layout/admin': {
       preLoaderRoute: typeof LayoutAdminImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/datasets': {
+      preLoaderRoute: typeof LayoutDatasetsImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/graph_cytoscape': {
@@ -126,6 +136,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutDatasetsRoute,
     LayoutGraphcytoscapeRoute,
     LayoutGraphd3Route,
     LayoutItemsRoute,

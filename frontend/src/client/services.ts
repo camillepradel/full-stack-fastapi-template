@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetCreate,DatasetPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -518,6 +518,48 @@ id,
 			errors: {
 				422: `Validation Error`,
 			},
+		});
+	}
+
+}
+
+export type TDataCreateDataset = {
+                requestBody: DatasetCreate
+                
+            }
+
+export class DatasetsService {
+
+	/**
+	 * Create Dataset
+	 * @returns DatasetPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static createDataset(data: TDataCreateDataset): CancelablePromise<DatasetPublic> {
+		const {
+requestBody,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
+			url: '/api/v1/datasets/',
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Get Create Options
+	 * Get all options to create a new dataset.
+	 * @returns unknown Successful Response
+	 * @throws ApiError
+	 */
+	public static getCreateOptions(): CancelablePromise<Record<string, unknown>> {
+				return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/datasets/create-options/',
 		});
 	}
 
