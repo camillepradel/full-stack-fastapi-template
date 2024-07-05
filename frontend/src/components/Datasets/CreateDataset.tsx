@@ -1,9 +1,12 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import { Suspense } from "react"
-import { ApiError, DatasetCreate, DatasetsService } from "../../client"
-import Form from '@rjsf/chakra-ui';
+import { Form } from '@rjsf/chakra-ui';
 import validator from '@rjsf/validator-ajv8';
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Suspense } from "react";
+import { ApiError, DatasetCreate, DatasetsService } from "../../client";
 import useCustomToast from "../../hooks/useCustomToast";
+// import React from "react";
+import { IChangeEvent } from "@rjsf/core";
+import { RJSFSchema } from "@rjsf/utils";
 import React from "react";
 
 
@@ -13,16 +16,16 @@ const CreateDatasetForm = () => {
     queryFn: () => DatasetsService.getCreateOptions(),
   })
 
-  const log = (type) => console.log.bind(console, type);
+  const log = (type: string) => console.log.bind(console, type);
 
-  const formRef = React.createRef();
+  const formRef = React.useRef(null);
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const mutation = useMutation({
     mutationFn: (data: DatasetCreate) =>
       DatasetsService.createDataset({ requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Item created successfully.", "success");
+      showToast("Success!", "Dataset created successfully.", "success");
       console.log(formRef);
     },
     onError: (err: ApiError) => {
@@ -30,11 +33,11 @@ const CreateDatasetForm = () => {
       showToast("Something went wrong.", `${errDetail}`, "error");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["datasets"] })
     },
   })
 
-  const onSubmit = ({ formData }) => mutation.mutate(formData);
+  const onSubmit = (data: IChangeEvent<any, RJSFSchema, any>, _e: any) => mutation.mutate(data.formData);
 
   return (
     <Form

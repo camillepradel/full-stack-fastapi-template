@@ -1,12 +1,4 @@
-get-opentapioca-resources:
-	mkdir ./backend/app/opentapioca_resources
-	gsutil -m cp \
-		"gs://dev-storage-geotrend/ml-models/opentapioca/2023_06_27/classifier.pkl" \
-		"gs://dev-storage-geotrend/ml-models/opentapioca/2023_06_27/latest-all.bow.pkl" \
-		"gs://dev-storage-geotrend/ml-models/opentapioca/2023_06_27/wikidata_graph.pgrank.npy" \
-		./backend/app/opentapioca_resources
-
-start-containers:
+up:
 	docker compose up
 
 start-db-container:

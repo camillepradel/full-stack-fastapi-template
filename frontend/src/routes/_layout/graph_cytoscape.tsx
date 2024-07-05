@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_layout/graph_cytoscape")({
 
 
 function GraphDisplay() {
-  const ref = useRef()
+  const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     cytoscape({
       container: ref.current,

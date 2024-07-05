@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_layout/graph_d3")({
 
 
 function GraphDisplay() {
-  const ref = useRef()
+  const ref = useRef<SVGSVGElement>(null)
   useEffect(() => {
     const svgElement = d3.select(ref.current)
     svgElement.append("circle")
