@@ -1,10 +1,10 @@
 up:
 	docker compose up
 
-start-db-container:
+up-db:
 	docker compose up db
 
-stop-containers:
+down:
 	docker compose down
 
 clean-restart-containers:
@@ -20,3 +20,6 @@ see-all-logs:
 
 see-backend-logs:
 	docker compose logs backend
+
+run-kuzu-explorer:
+	docker run -p 8000:8000 -v ./dataset:/database --rm kuzudb/explorer:0.6.0

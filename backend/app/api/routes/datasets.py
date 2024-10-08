@@ -6,6 +6,9 @@ from fastapi import APIRouter
 from app.api.datasets.dglke_datasets import (
     instanciate_dataset_in_kuzu as dglke_instanciate_dataset_in_kuzu,
 )
+from app.api.datasets.stix_datasets import (
+    instanciate_dataset_in_kuzu as stix_instanciate_dataset_in_kuzu,
+)
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Dataset,
@@ -13,6 +16,7 @@ from app.models import (
     DatasetCreate,
     DatasetRatioSampling,
     DglkeDatasetSpecifications,
+    StixDatasetSpecifications,
 )
 
 router = APIRouter()
@@ -73,9 +77,11 @@ def create_dataset(
     session.commit()
     session.refresh(dataset)
 
-    # Instantiate the dataset in Kuzu if it's a DGLKE dataset
+    # Instantiate the dataset in Kuzu
     if isinstance(dataset_create.specifications, DglkeDatasetSpecifications):
         dglke_instanciate_dataset_in_kuzu(dataset, dataset_create.specifications)
+    elif isinstance(dataset_create.specifications, StixDatasetSpecifications):
+        stix_instanciate_dataset_in_kuzu(dataset, dataset_create.specifications)
     else:
         raise ValueError("Specifications not supported")
 

@@ -26,7 +26,7 @@ sqlmodel = "^0.0.16"
 bcrypt = "4.0.1"
 pydantic-settings = "^2.2.1"
 sentry-sdk = {extras = ["fastapi"], version = "^1.40.6"}
-kuzu = "^0.4.0"
+kuzu = "0.6.0"
 torch = {version = "2.1.0", source = "pytorch_cpu"}
 torch-scatter = {version = "2.1.2", source = "pyg_cpu"}
 torch-sparse = {version = "0.6.18", source = "pyg_cpu"}
@@ -36,6 +36,7 @@ dgl = "0.9"
 dglke = "^0.1.2"
 pandas = "^2.2.2"
 python-slugify = "^8.0.4"
+stix2 = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

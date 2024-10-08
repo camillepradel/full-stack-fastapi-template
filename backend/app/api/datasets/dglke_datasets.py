@@ -40,6 +40,9 @@ AVAILABLE_DATASET_TO_DGLKE_CLASS: dict[DlgkeAvailableDataset, type[KGDataset]] =
 def instanciate_dataset_in_kuzu(
     dataset: Dataset, specifications: DglkeDatasetSpecifications
 ):
+    # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
+    #       it in all instanciate_dataset_in_kuzu() functions
+
     assert isinstance(specifications, DglkeDatasetSpecifications)
     # Initialize database
     db_path: Path = Path(dataset.kuzu_path)
@@ -62,10 +65,11 @@ def instanciate_dataset_in_kuzu(
         list(dglke_dataset.entity2id.items()),
         columns=["label", "id"],
     )
-    nodes = nodes.sample(
-        n=dataset.sampling_count,
-        frac=dataset.sampling_ratio,
-    )
+    if dataset.sampling_count is not None or dataset.sampling_ratio is not None:
+        nodes = nodes.sample(
+            n=dataset.sampling_count,
+            frac=dataset.sampling_ratio,
+        )
     conn.execute(
         "LOAD FROM nodes CREATE (n:" + unique_class_name + " {id: id, label: label});"
     )
