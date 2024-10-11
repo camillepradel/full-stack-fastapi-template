@@ -12,6 +12,7 @@ const items = [
   { icon: FiBriefcase, title: "Items", path: "/items" },
   { icon: FiSettings, title: "User Settings", path: "/settings" },
   { icon: TbBooks, title: "Datasets", path: "/datasets" },
+  { icon: TbBooks, title: "Datasets2", path: "/datasetss" },
   { icon: PiGraph, title: "Cytoscape.js", path: "/graph_cytoscape" },
   { icon: TbChartDots3, title: "D3.js", path: "/graph_d3" },
 ]

@@ -112,6 +112,22 @@ export const $DatasetSplit = {
 	enum: ['train','validation','test',],
 } as const;
 
+export const $DatasetsPublic = {
+	properties: {
+		data: {
+	type: 'array',
+	contains: {
+		type: 'DatasetPublic',
+	},
+	isRequired: true,
+},
+		count: {
+	type: 'number',
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $DglkeDatasetSpecifications = {
 	properties: {
 		initial_dataset: {

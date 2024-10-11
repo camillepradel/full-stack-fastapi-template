@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 
 from sqlmodel import Field, Relationship, SQLModel
@@ -163,14 +164,8 @@ class DatasetBase(SQLModel):
 
 
 class DatasetCreate(DatasetBase):
-    name: str
     specifications: DglkeDatasetSpecifications | StixDatasetSpecifications
     sampling: DatasetRatioSampling | DatasetCountSampling | None
-
-
-class DatasetPublic(DatasetBase):
-    id: int
-    owner_id: int
 
 
 class Dataset(DatasetBase, table=True):
@@ -179,8 +174,41 @@ class Dataset(DatasetBase, table=True):
     owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="datasets")
     # specifications
-    specifications_class: str
+    specifications_module_name: str
+    specifications_class_name: str
     specifications_value: str
     # sampling
     sampling_ratio: float | None = Field(gt=0, le=1)
     sampling_count: int | None = Field(gt=0)
+
+    def _get_specifications(self):
+        # TODO: remove this function if never used
+        specifications_class = getattr(
+            sys.modules[self.specifications_module_name], self.specifications_class_name
+        )
+        specifications = specifications_class.model_validate_json(
+            self.specifications_value
+        )
+        return specifications
+
+    def _get_sampling(self) -> DatasetRatioSampling | DatasetCountSampling | None:
+        # TODO: remove this function if never used
+        sampling = (
+            DatasetRatioSampling(ratio=self.sampling_ratio)
+            if self.sampling_ratio
+            else DatasetCountSampling(count=self.sampling_count)
+            if self.sampling_count
+            else None
+        )
+        return sampling
+
+
+# Properties to return via API, id is always required
+class DatasetPublic(DatasetBase):
+    id: int
+    owner_id: int
+
+
+class DatasetsPublic(SQLModel):
+    data: list[DatasetPublic]
+    count: int

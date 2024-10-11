@@ -1,3 +1,4 @@
+import base64
 import logging
 from collections.abc import Iterable
 from pathlib import Path
@@ -104,7 +105,10 @@ def instanciate_dataset_in_kuzu(
     db = kuzu.Database(db_path)
     conn = kuzu.Connection(db)
 
-    stix_data = stix2.parse(specifications.file_content)
+    stix_str = base64.b64decode(specifications.file_content.split("base64,")[1]).decode(
+        "utf-8"
+    )
+    stix_data = stix2.parse(stix_str)
 
     nodes: pd.DataFrame = _stix_objects_to_nodes_df(stix_data.objects)
     if dataset.sampling_count is not None or dataset.sampling_ratio is not None:

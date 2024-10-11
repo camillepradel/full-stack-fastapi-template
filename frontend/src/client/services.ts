@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetCreate,DatasetPublic } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -523,6 +523,11 @@ id,
 
 }
 
+export type TDataReadDatasets = {
+                limit?: number
+skip?: number
+                
+            }
 export type TDataCreateDataset = {
                 requestBody: DatasetCreate
                 
@@ -531,7 +536,39 @@ export type TDataCreateDataset = {
 export class DatasetsService {
 
 	/**
+	 * Read Datasets
+	 * Retrieve datasets of current user.
+	 * @returns DatasetsPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readDatasets(data: TDataReadDatasets = {}): CancelablePromise<DatasetsPublic> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/datasets/',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
 	 * Create Dataset
+	 * Create a new dataset.
+ * 
+ * Args:
+ * session (SessionDep): The database session.
+ * current_user (CurrentUser): The current user.
+ * dataset_create (DatasetCreate): Instructions to create the dataset.
+ * 
+ * Returns:
+ * Dataset: The created dataset.
 	 * @returns DatasetPublic Successful Response
 	 * @throws ApiError
 	 */
@@ -553,6 +590,9 @@ requestBody,
 	/**
 	 * Get Create Options
 	 * Get all options to create a new dataset.
+ * 
+ * Returns:
+ * dict[str, Any]: The JSON schema for all options to create a new dataset.
 	 * @returns unknown Successful Response
 	 * @throws ApiError
 	 */

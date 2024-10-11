@@ -1,7 +1,9 @@
-from datetime import datetime
+import inspect
+from collections.abc import Sequence
 from typing import Any
 
 from fastapi import APIRouter
+from sqlmodel import func, select
 
 from app.api.datasets.dglke_datasets import (
     instanciate_dataset_in_kuzu as dglke_instanciate_dataset_in_kuzu,
@@ -14,19 +16,49 @@ from app.models import (
     Dataset,
     DatasetCountSampling,
     DatasetCreate,
+    DatasetPublic,
     DatasetRatioSampling,
+    DatasetsPublic,
     DglkeDatasetSpecifications,
     StixDatasetSpecifications,
 )
+from app.utils import get_timestamp_str
 
 router = APIRouter()
 
 
-def get_timestamp_str() -> str:
-    return str(datetime.now()).replace(" ", "_")
+@router.get("/", response_model=DatasetsPublic)
+def read_datasets(
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+) -> DatasetsPublic:
+    """
+    Retrieve datasets of current user.
+    """
+
+    if current_user.is_superuser:
+        count_statement = select(func.count()).select_from(Dataset)
+        count = session.exec(count_statement).one()
+        statement = select(Dataset).offset(skip).limit(limit)
+        datasets: Sequence[Dataset] = session.exec(statement).all()
+    else:
+        count_statement = (
+            select(func.count())
+            .select_from(Dataset)
+            .where(Dataset.owner_id == current_user.id)
+        )
+        count = session.exec(count_statement).one()
+        statement = (
+            select(Dataset)
+            .where(Dataset.owner_id == current_user.id)
+            .offset(skip)
+            .limit(limit)
+        )
+        datasets: Sequence[Dataset] = session.exec(statement).all()
+
+    return DatasetsPublic(data=datasets, count=count)
 
 
-@router.post("/", response_model=Dataset)
+@router.post("/", response_model=DatasetPublic)
 def create_dataset(
     *,
     session: SessionDep,
@@ -48,7 +80,10 @@ def create_dataset(
     kuzu_path = f"{get_timestamp_str()}_{dataset_create.name}"
 
     # Serialize dataset specifications
-    specifications_class = str(type(dataset_create.specifications))
+    specifications_module_name = inspect.getmodule(
+        type(dataset_create.specifications)
+    ).__name__
+    specifications_class_name = type(dataset_create.specifications).__name__
     specifications_value = dataset_create.specifications.model_dump_json()
 
     # Create and save the dataset info in DB
@@ -57,7 +92,8 @@ def create_dataset(
         update={
             "owner_id": current_user.id,
             "kuzu_path": kuzu_path,
-            "specifications_class": specifications_class,
+            "specifications_module_name": specifications_module_name,
+            "specifications_class_name": specifications_class_name,
             "specifications_value": specifications_value,
             "sampling_ratio": (
                 dataset_create.sampling.ratio

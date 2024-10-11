@@ -41,6 +41,13 @@ export type DatasetSplit = 'train' | 'validation' | 'test';
 
 
 
+export type DatasetsPublic = {
+	data: Array<DatasetPublic>;
+	count: number;
+};
+
+
+
 export type DglkeDatasetSpecifications = {
 	initial_dataset: DlgkeAvailableDataset;
 	splits: Array<DatasetSplit>;
