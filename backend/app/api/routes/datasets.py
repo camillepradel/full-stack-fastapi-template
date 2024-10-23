@@ -2,9 +2,10 @@ import inspect
 from collections.abc import Sequence
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
+from app.api.datasets.datasets import read_dataset_from_kuzu
 from app.api.datasets.dglke_datasets import (
     instanciate_dataset_in_kuzu as dglke_instanciate_dataset_in_kuzu,
 )
@@ -14,6 +15,7 @@ from app.api.datasets.stix_datasets import (
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Dataset,
+    DatasetContentPublic,
     DatasetCountSampling,
     DatasetCreate,
     DatasetPublic,
@@ -58,6 +60,24 @@ def read_datasets(
     return DatasetsPublic(data=datasets, count=count)
 
 
+@router.get("/content/{id}", response_model=DatasetContentPublic)
+def read_dataset(
+    session: SessionDep, current_user: CurrentUser, id: int
+) -> DatasetContentPublic:
+    """
+    Get dataset content (nodes and relations) by ID.
+    """
+    dataset: Dataset | None = session.get(Dataset, id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    if not current_user.is_superuser and (dataset.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+
+    dataset_content_public: DatasetContentPublic = read_dataset_from_kuzu(dataset)
+
+    return dataset_content_public
+
+
 @router.post("/", response_model=DatasetPublic)
 def create_dataset(
     *,
@@ -86,7 +106,7 @@ def create_dataset(
     specifications_class_name = type(dataset_create.specifications).__name__
     specifications_value = dataset_create.specifications.model_dump_json()
 
-    # Create and save the dataset info in DB
+    # Create and save the dataset into in DB
     dataset = Dataset().model_validate(
         dataset_create,
         update={

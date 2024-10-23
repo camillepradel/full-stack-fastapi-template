@@ -9,6 +9,13 @@ export type Body_login_login_access_token = {
 
 
 
+export type DatasetContentPublic = {
+	relations: Array<RelationPublic>;
+	nodes: Array<NodePublic>;
+};
+
+
+
 export type DatasetCountSampling = {
 	count: number;
 };
@@ -104,6 +111,21 @@ export type Message = {
 export type NewPassword = {
 	token: string;
 	new_password: string;
+};
+
+
+
+export type NodePublic = {
+	id: string;
+	type: string;
+};
+
+
+
+export type RelationPublic = {
+	source: string;
+	target: string;
+	type: string;
 };
 
 

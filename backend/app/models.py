@@ -212,3 +212,19 @@ class DatasetPublic(DatasetBase):
 class DatasetsPublic(SQLModel):
     data: list[DatasetPublic]
     count: int
+
+
+class RelationPublic(SQLModel):
+    source: str
+    target: str
+    type: str
+
+
+class NodePublic(SQLModel):
+    id: str
+    type: str
+
+
+class DatasetContentPublic(SQLModel):
+    relations: list[RelationPublic]
+    nodes: list[NodePublic]

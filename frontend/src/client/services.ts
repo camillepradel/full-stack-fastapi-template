@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetContentPublic,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -532,6 +532,10 @@ export type TDataCreateDataset = {
                 requestBody: DatasetCreate
                 
             }
+export type TDataReadDataset = {
+                id: number
+                
+            }
 
 export class DatasetsService {
 
@@ -581,6 +585,28 @@ requestBody,
 			url: '/api/v1/datasets/',
 			body: requestBody,
 			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Dataset
+	 * Get dataset content (nodes and relations) by ID.
+	 * @returns DatasetContentPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readDataset(data: TDataReadDataset): CancelablePromise<DatasetContentPublic> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/datasets/content/{id}',
+			path: {
+				id
+			},
 			errors: {
 				422: `Validation Error`,
 			},

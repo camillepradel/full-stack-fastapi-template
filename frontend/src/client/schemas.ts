@@ -40,6 +40,25 @@ export const $Body_login_login_access_token = {
 	},
 } as const;
 
+export const $DatasetContentPublic = {
+	properties: {
+		relations: {
+	type: 'array',
+	contains: {
+		type: 'RelationPublic',
+	},
+	isRequired: true,
+},
+		nodes: {
+	type: 'array',
+	contains: {
+		type: 'NodePublic',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $DatasetCountSampling = {
 	properties: {
 		count: {
@@ -255,6 +274,36 @@ export const $NewPassword = {
 	isRequired: true,
 },
 		new_password: {
+	type: 'string',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $NodePublic = {
+	properties: {
+		id: {
+	type: 'string',
+	isRequired: true,
+},
+		type: {
+	type: 'string',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $RelationPublic = {
+	properties: {
+		source: {
+	type: 'string',
+	isRequired: true,
+},
+		target: {
+	type: 'string',
+	isRequired: true,
+},
+		type: {
 	type: 'string',
 	isRequired: true,
 },
