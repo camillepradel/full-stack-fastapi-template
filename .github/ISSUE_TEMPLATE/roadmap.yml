@@ -1,0 +1,12 @@
+name: Roadmap
+about: Propose a roadmap item.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the roadmap item below.
+  - type: textarea
+    id: content
+    attributes:
+      label: Roadmap item description
+      description: Describe roadmap item here.
