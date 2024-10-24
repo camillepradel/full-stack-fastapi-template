@@ -1,5 +1,5 @@
 name: Roadmap
-about: Propose a roadmap item.
+description: Propose a roadmap item.
 body:
   - type: markdown
     attributes:
