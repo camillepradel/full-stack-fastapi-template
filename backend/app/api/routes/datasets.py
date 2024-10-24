@@ -10,12 +10,15 @@ from app.api.datasets.dglke_datasets import (
     instanciate_dataset_in_kuzu as dglke_instanciate_dataset_in_kuzu,
 )
 from app.api.datasets.stix_datasets import (
+    get_graph_display_specifications as stix_get_graph_display_specifications,
+)
+from app.api.datasets.stix_datasets import (
     instanciate_dataset_in_kuzu as stix_instanciate_dataset_in_kuzu,
 )
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Dataset,
-    DatasetContentPublic,
+    DatasetContent,
     DatasetCountSampling,
     DatasetCreate,
     DatasetPublic,
@@ -60,10 +63,10 @@ def read_datasets(
     return DatasetsPublic(data=datasets, count=count)
 
 
-@router.get("/content/{id}", response_model=DatasetContentPublic)
-def read_dataset(
+@router.get("/content/{id}", response_model=DatasetContent)
+def read_dataset_content(
     session: SessionDep, current_user: CurrentUser, id: int
-) -> DatasetContentPublic:
+) -> DatasetContent:
     """
     Get dataset content (nodes and relations) by ID.
     """
@@ -73,9 +76,9 @@ def read_dataset(
     if not current_user.is_superuser and (dataset.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
 
-    dataset_content_public: DatasetContentPublic = read_dataset_from_kuzu(dataset)
+    dataset_content: DatasetContent = read_dataset_from_kuzu(dataset)
 
-    return dataset_content_public
+    return dataset_content
 
 
 @router.post("/", response_model=DatasetPublic)
@@ -97,7 +100,7 @@ def create_dataset(
         Dataset: The created dataset.
     """
     # Generate a timestamped name for the dataset
-    kuzu_path = f"{get_timestamp_str()}_{dataset_create.name}"
+    kuzu_path = f"kuzu_data/{get_timestamp_str()}_{dataset_create.name}"
 
     # Serialize dataset specifications
     specifications_module_name = inspect.getmodule(
@@ -105,6 +108,13 @@ def create_dataset(
     ).__name__
     specifications_class_name = type(dataset_create.specifications).__name__
     specifications_value = dataset_create.specifications.model_dump_json()
+
+    # get graph display specifications adapted to the dataset type
+    graph_display_specifications = (
+        stix_get_graph_display_specifications()
+        if isinstance(dataset_create.specifications, StixDatasetSpecifications)
+        else None
+    )
 
     # Create and save the dataset into in DB
     dataset = Dataset().model_validate(
@@ -127,6 +137,7 @@ def create_dataset(
                 and isinstance(dataset_create.sampling, DatasetCountSampling)
                 else None
             ),
+            "graph_display_specifications": graph_display_specifications,
         },
     )
     session.add(dataset)

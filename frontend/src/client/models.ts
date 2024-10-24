@@ -9,9 +9,10 @@ export type Body_login_login_access_token = {
 
 
 
-export type DatasetContentPublic = {
-	relations: Array<RelationPublic>;
-	nodes: Array<NodePublic>;
+export type DatasetContent = {
+	metadata?: DatasetPublic;
+	relations: Array<Relation>;
+	nodes: Array<Node>;
 };
 
 
@@ -34,6 +35,7 @@ export type DatasetPublic = {
 	name: string;
 	id: number;
 	owner_id: number;
+	graph_display_specifications: GraphDisplaySpecifications | null;
 };
 
 
@@ -63,6 +65,14 @@ export type DglkeDatasetSpecifications = {
 
 
 export type DlgkeAvailableDataset = 'KGDatasetFB15k' | 'other';
+
+
+
+export type GraphDisplaySpecifications = {
+	id?: number | null;
+	node_label_field_name?: string | null;
+	node_icons?: Record<string, string> | null;
+};
 
 
 
@@ -115,17 +125,19 @@ export type NewPassword = {
 
 
 
-export type NodePublic = {
+export type Node = {
 	id: string;
 	type: string;
+	data?: Record<string, unknown>;
 };
 
 
 
-export type RelationPublic = {
+export type Relation = {
 	source: string;
 	target: string;
 	type: string;
+	data?: Record<string, unknown>;
 };
 
 

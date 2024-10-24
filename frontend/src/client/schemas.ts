@@ -40,19 +40,22 @@ export const $Body_login_login_access_token = {
 	},
 } as const;
 
-export const $DatasetContentPublic = {
+export const $DatasetContent = {
 	properties: {
+		metadata: {
+	type: 'DatasetPublic',
+},
 		relations: {
 	type: 'array',
 	contains: {
-		type: 'RelationPublic',
+		type: 'Relation',
 	},
 	isRequired: true,
 },
 		nodes: {
 	type: 'array',
 	contains: {
-		type: 'NodePublic',
+		type: 'Node',
 	},
 	isRequired: true,
 },
@@ -112,6 +115,15 @@ export const $DatasetPublic = {
 	type: 'number',
 	isRequired: true,
 },
+		graph_display_specifications: {
+	type: 'any-of',
+	contains: [{
+	type: 'GraphDisplaySpecifications',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
 	},
 } as const;
 
@@ -166,6 +178,38 @@ export const $DglkeDatasetSpecifications = {
 export const $DlgkeAvailableDataset = {
 	type: 'Enum',
 	enum: ['KGDatasetFB15k','other',],
+} as const;
+
+export const $GraphDisplaySpecifications = {
+	properties: {
+		id: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+},
+		node_label_field_name: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		node_icons: {
+	type: 'any-of',
+	contains: [{
+	type: 'dictionary',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+	},
 } as const;
 
 export const $HTTPValidationError = {
@@ -280,7 +324,7 @@ export const $NewPassword = {
 	},
 } as const;
 
-export const $NodePublic = {
+export const $Node = {
 	properties: {
 		id: {
 	type: 'string',
@@ -290,10 +334,17 @@ export const $NodePublic = {
 	type: 'string',
 	isRequired: true,
 },
+		data: {
+	type: 'dictionary',
+	contains: {
+	properties: {
+	},
+},
+},
 	},
 } as const;
 
-export const $RelationPublic = {
+export const $Relation = {
 	properties: {
 		source: {
 	type: 'string',
@@ -306,6 +357,13 @@ export const $RelationPublic = {
 		type: {
 	type: 'string',
 	isRequired: true,
+},
+		data: {
+	type: 'dictionary',
+	contains: {
+	properties: {
+	},
+},
 },
 	},
 } as const;

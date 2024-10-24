@@ -1,7 +1,7 @@
 import sys
 from enum import Enum
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 # Shared properties
@@ -159,6 +159,15 @@ class DatasetCountSampling(SQLModel):
     count: int = Field(gt=0)
 
 
+class GraphDisplaySpecifications(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    # node display:
+    # which field to use when displaying node label
+    node_label_field_name: str | None = None
+    # which icon to use when displaying a node, according to its class
+    node_icons: dict[str, str] | None = Field(sa_column=Column(JSON), default=None)
+
+
 class DatasetBase(SQLModel):
     name: str
 
@@ -180,6 +189,11 @@ class Dataset(DatasetBase, table=True):
     # sampling
     sampling_ratio: float | None = Field(gt=0, le=1)
     sampling_count: int | None = Field(gt=0)
+
+    graph_display_specifications_id: int | None = Field(
+        default=None, foreign_key="graphdisplayspecifications.id"
+    )
+    graph_display_specifications: GraphDisplaySpecifications | None = Relationship()
 
     def _get_specifications(self):
         # TODO: remove this function if never used
@@ -207,6 +221,7 @@ class Dataset(DatasetBase, table=True):
 class DatasetPublic(DatasetBase):
     id: int
     owner_id: int
+    graph_display_specifications: GraphDisplaySpecifications | None
 
 
 class DatasetsPublic(SQLModel):
@@ -214,17 +229,20 @@ class DatasetsPublic(SQLModel):
     count: int
 
 
-class RelationPublic(SQLModel):
+class Relation(SQLModel):
     source: str
     target: str
     type: str
+    data: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
 
-class NodePublic(SQLModel):
+class Node(SQLModel):
     id: str
     type: str
+    data: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
 
-class DatasetContentPublic(SQLModel):
-    relations: list[RelationPublic]
-    nodes: list[NodePublic]
+class DatasetContent(SQLModel):
+    metadata: DatasetPublic
+    relations: list[Relation]
+    nodes: list[Node]

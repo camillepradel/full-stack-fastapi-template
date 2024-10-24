@@ -3,20 +3,21 @@ import * as d3 from "d3";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import { Container, Heading } from "@chakra-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { DatasetContentPublic, DatasetsService, NodePublic, RelationPublic } from "../../client";
+import { DatasetContent, DatasetsService, Node, OpenAPI, Relation } from "../../client";
 import { D3DragEvent } from "d3";
+import { getProperty } from "dot-prop";
 
 export const Route = createFileRoute("/_layout/graph_d3")({
   component: GraphD3,
 });
 
 interface GraphDisplayProps {
-  dataset_content: DatasetContentPublic;
+  dataset_content: DatasetContent;
 }
 
-type NodeDatum = NodePublic & d3.SimulationNodeDatum;
+type NodeDatum = Node & d3.SimulationNodeDatum;
 
-type LinkDatum = RelationPublic & d3.SimulationLinkDatum<NodeDatum>
+type LinkDatum = Relation & d3.SimulationLinkDatum<NodeDatum>
 
 function GraphDisplay({ dataset_content }: GraphDisplayProps) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -24,15 +25,7 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
   const { nodes, links, nodeTypes, relationTypes } = useMemo(() => {
     const nodeTypes = Array.from(new Set(dataset_content.nodes.map(n => n.type)));
     const relationTypes = Array.from(new Set(dataset_content.relations.map(d => d.type)));
-    const nodes = Array.from(
-      dataset_content.nodes,
-      n => ({
-        id: n.id,
-        type: n.type,
-        x: 0,
-        y: 0
-      } as NodeDatum)
-    );
+    const nodes = dataset_content.nodes.map(d => ({ ...d, x: 0, y: 0 } as NodeDatum));
     const links = dataset_content.relations.map(d => ({ ...d } as LinkDatum));
     return { nodes, links, nodeTypes, relationTypes };
   }, [dataset_content]);
@@ -44,6 +37,7 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
     const height = 600;
     const nodeColor = d3.scaleOrdinal(nodeTypes, d3.schemeCategory10);
     const relationColor = d3.scaleOrdinal(relationTypes, d3.schemePastel1);
+    const metadata = dataset_content.metadata
 
     // Clear existing content
     d3.select(svgRef.current).selectAll("*").remove();
@@ -57,6 +51,55 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
         M${sourceNode.x ?? 0},${sourceNode.y ?? 0}
         A${r},${r} 0 0,1 ${targetNode.x ?? 0},${targetNode.y ?? 0}
       `;
+    }
+
+    const getNodeIcon = (d: NodeDatum) => {
+      const node_icons = metadata?.graph_display_specifications?.node_icons
+      let icon = (node_icons? (node_icons[d.type] || node_icons["*"]) : null) || "Icon-round-Question_mark.svg.png";
+      return OpenAPI.BASE + "/static/" + icon
+    }
+
+
+    const getDisplayLabel = (d: NodeDatum) => {
+      let candidate_fields = ["data.name", "data.label", "data.id", "id"]
+      if (metadata?.graph_display_specifications?.node_label_field_name) {
+        candidate_fields.unshift(metadata.graph_display_specifications.node_label_field_name)
+      }
+      for (const candidate_field of candidate_fields) {
+        const label = getProperty(d, candidate_field)
+        if (label) {
+          return label
+        }
+      }
+      return d.id
+    }
+
+    const displayNode = (node: d3.Selection<SVGGElement, NodeDatum, SVGGElement, unknown>) => {
+      if (metadata?.graph_display_specifications?.node_icons)
+        node.append("image")
+          .attr("xlink:href", getNodeIcon)
+          .attr("width", 40)
+          .attr("height", 40)
+          .attr("x", -20)
+          .attr("y", -20);
+      else
+        node.append("circle")
+          .attr("fill", d => nodeColor(d.type))
+          .attr("stroke", "white")
+          .attr("stroke-width", 1.5)
+          .attr("r", 4);
+
+      node.append("text")
+        .attr("x", 8)
+        .attr("y", "0.31em")
+        .text(getDisplayLabel)
+        .attr("stroke", "white")
+        .attr("stroke-width", 3)
+        .clone(true)
+        .attr("fill", "black")
+        .attr("stroke", "none")
+        .attr("stroke-width", 1);
+
     }
 
     const drag = (simulation: d3.Simulation<NodeDatum, LinkDatum>) => {
@@ -91,7 +134,7 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
 
     const simulation = d3.forceSimulation<NodeDatum>(nodes)
       .force("link", d3.forceLink<NodeDatum, LinkDatum>(links).id(d => d.id))
-      .force("charge", d3.forceManyBody().strength(-4000))
+      .force("charge", d3.forceManyBody().strength(-1000))
       .force("x", d3.forceX())
       .force("y", d3.forceY());
 
@@ -130,23 +173,8 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
       .selectAll<SVGGElement, NodeDatum>("g")
       .data(nodes)
       .join("g")
-      .attr("fill", d => nodeColor(d.type))
-      .call(drag(simulation) as any); // Type assertion needed due to D3's typing limitations
-
-    node.append("circle")
-      .attr("stroke", "white")
-      .attr("stroke-width", 1.5)
-      .attr("r", 4);
-
-    node.append("text")
-      .attr("x", 8)
-      .attr("y", "0.31em")
-      .text(d => d.id)
-      .clone(true)
-      .lower()
-      .attr("fill", "none")
-      .attr("stroke", "white")
-      .attr("stroke-width", 3);
+      .call(drag(simulation) as any) // Type assertion needed due to D3's typing limitations
+      .call(displayNode);
 
     simulation.on("tick", () => {
       link.attr("d", linkArc);
@@ -165,7 +193,7 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
 function GraphContent() {
   const { data: dataset_content } = useSuspenseQuery({
     queryKey: ["datasets"],
-    queryFn: () => DatasetsService.readDataset({ id: 3 }),
+    queryFn: () => DatasetsService.readDatasetContent({ id: 16 }),
   });
 
   return <GraphDisplay dataset_content={dataset_content} />;

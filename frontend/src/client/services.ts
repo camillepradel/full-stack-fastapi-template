@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetContentPublic,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetContent,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -532,7 +532,7 @@ export type TDataCreateDataset = {
                 requestBody: DatasetCreate
                 
             }
-export type TDataReadDataset = {
+export type TDataReadDatasetContent = {
                 id: number
                 
             }
@@ -592,12 +592,12 @@ requestBody,
 	}
 
 	/**
-	 * Read Dataset
+	 * Read Dataset Content
 	 * Get dataset content (nodes and relations) by ID.
-	 * @returns DatasetContentPublic Successful Response
+	 * @returns DatasetContent Successful Response
 	 * @throws ApiError
 	 */
-	public static readDataset(data: TDataReadDataset): CancelablePromise<DatasetContentPublic> {
+	public static readDatasetContent(data: TDataReadDatasetContent): CancelablePromise<DatasetContent> {
 		const {
 id,
 } = data;

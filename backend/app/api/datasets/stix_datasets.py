@@ -11,6 +11,7 @@ import stix2
 
 from app.models import (
     Dataset,
+    GraphDisplaySpecifications,
     StixDatasetSpecifications,
 )
 
@@ -41,6 +42,33 @@ STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE = {
     stix2.properties.StringProperty: ("STRING", np.string_),
     stix2.properties.TimestampProperty: ("TIMESTAMP", np.datetime64),
 }
+
+
+def get_graph_display_specifications() -> GraphDisplaySpecifications:
+    return GraphDisplaySpecifications(
+        node_label_field_name="data.name",
+        # STIX icons come from https://github.com/freetaxii/stix2-graphics/tree/master/icons/png
+        node_icons={
+            "AttackPattern": "stix/attack-pattern-noback-flat-300-dpi.png",
+            "Campaign": "stix/campaign-noback-flat-300-dpi.png",
+            "CourseOfAction": "stix/coa-noback-flat-300-dpi.png",
+            "Grouping": "stix/grouping-noback-flat-300-dpi.png",
+            "Identity": "stix/identity-noback-flat-300-dpi.png",
+            "Indicator": "stix/indicator-noback-flat-300-dpi.png",
+            "Infrastructure": "stix/infrastructure-noback-flat-300-dpi.png",
+            "IntrusionSet": "stix/intrusion-set-noback-flat-300-dpi.png",
+            "Location": "stix/location-noback-flat-300-dpi.png",
+            "Malware": "stix/malware-noback-flat-300-dpi.png",
+            "MalwareAnalysis": "stix/malware-analysis-noback-flat-300-dpi.png",
+            "Note": "stix/note-noback-flat-300-dpi.png",
+            "ObservedData": "stix/observed-data-noback-flat-300-dpi.png",
+            "Opinion": "stix/opinion-noback-flat-300-dpi.png",
+            "Report": "stix/report-noback-flat-300-dpi.png",
+            "ThreatActor": "stix/threat-actor-noback-flat-300-dpi.png",
+            "Tool": "stix/tool-noback-flat-300-dpi.png",
+            "Vulnerability": "stix/vulnerability-noback-flat-300-dpi.png",
+        },
+    )
 
 
 def _stix_objects_to_nodes_df(stix_objects) -> pd.DataFrame:
