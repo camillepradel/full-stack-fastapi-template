@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import * as d3 from "d3";
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import { Container, Heading } from "@chakra-ui/react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Button, Container, Heading } from "@chakra-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { DatasetContent, DatasetsService, Node, OpenAPI, Relation } from "../../client";
 import { D3DragEvent } from "d3";
@@ -13,13 +13,15 @@ export const Route = createFileRoute("/_layout/graph_d3")({
 
 interface GraphDisplayProps {
   dataset_content: DatasetContent;
+  someNodeFrozen: boolean;
+  setSomeNodeFrozen: (someNodeFrozen: boolean) => void;
 }
 
 type NodeDatum = Node & d3.SimulationNodeDatum;
 
 type LinkDatum = Relation & d3.SimulationLinkDatum<NodeDatum>
 
-function GraphDisplay({ dataset_content }: GraphDisplayProps) {
+function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: GraphDisplayProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   const { nodes, links, nodeTypes, relationTypes } = useMemo(() => {
@@ -114,10 +116,9 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
         d.fy = event.y;
       }
 
-      function dragended(event: D3DragEvent<SVGGElement, NodeDatum, NodeDatum>, d: NodeDatum) {
+      function dragended(event: D3DragEvent<SVGGElement, NodeDatum, NodeDatum>, _d: NodeDatum) {
         if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+        setSomeNodeFrozen(true);
       }
 
       return d3.drag<SVGGElement, NodeDatum>()
@@ -186,17 +187,41 @@ function GraphDisplay({ dataset_content }: GraphDisplayProps) {
     };
   }, [nodes, links, relationTypes]);
 
+  function unfreezeNodes() {
+    for (const node of nodes) {
+      node.fx = null;
+      node.fy = null;
+    }
+  }
+
+  useEffect(() => {
+    if (!someNodeFrozen) {
+      unfreezeNodes();
+    }
+  }, [someNodeFrozen])
+
   return <svg ref={svgRef} />;
 }
 
-// Separate data fetching component
-function GraphContent() {
+// Handles data fetching, controls and calls GraphDisplay component
+function Graph() {
   const { data: dataset_content } = useSuspenseQuery({
     queryKey: ["datasets"],
     queryFn: () => DatasetsService.readDatasetContent({ id: 16 }),
   });
 
-  return <GraphDisplay dataset_content={dataset_content} />;
+  const [someNodeFrozen, setSomeNodeFrozen] = useState(false);
+
+  const unfreezeNodes = () => {
+    setSomeNodeFrozen(false)
+  }
+
+  return (
+    <div>
+      <GraphDisplay dataset_content={dataset_content} someNodeFrozen={someNodeFrozen} setSomeNodeFrozen={setSomeNodeFrozen} />
+      <Button isDisabled={!someNodeFrozen} onClick={unfreezeNodes}>Unfreeze nodes</Button>
+    </div>
+  );
 }
 
 
@@ -207,7 +232,7 @@ function GraphD3() {
         D3 graph
       </Heading>
       <Suspense fallback={<span>Loading graph...</span>}>
-        <GraphContent />
+        <Graph />
       </Suspense>
     </Container>
   );
