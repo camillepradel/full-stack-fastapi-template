@@ -206,8 +206,8 @@ function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: Gr
 // Handles data fetching, controls and calls GraphDisplay component
 function Graph() {
   const { data: dataset_content } = useSuspenseQuery({
-    queryKey: ["datasets"],
-    queryFn: () => DatasetsService.readDatasetContent({ id: 16 }),
+    queryKey: ["dataset-content"],
+    queryFn: () => DatasetsService.readDatasetContent({ id: 1 }),
   });
 
   const [someNodeFrozen, setSomeNodeFrozen] = useState(false);

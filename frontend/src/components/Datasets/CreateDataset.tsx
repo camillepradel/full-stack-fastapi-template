@@ -12,7 +12,7 @@ import React from "react";
 
 const CreateDatasetForm = () => {
   const { data: jsonSchema } = useSuspenseQuery({
-    queryKey: ["datasets"],
+    queryKey: ["datasets-create-options"],
     queryFn: () => DatasetsService.getCreateOptions(),
   })
 
