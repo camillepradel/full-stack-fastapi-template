@@ -125,10 +125,14 @@ class DatasetSplit(str, Enum):
 
 class DlgkeAvailableDataset(str, Enum):
     KGDatasetFB15k = "KGDatasetFB15k"
-    other = "other"
+    KGDatasetWN18 = "KGDatasetWN18"
 
 
-class DglkeDatasetSpecifications(SQLModel):
+class DatasetSpecifications(SQLModel):
+    pass
+
+
+class DglkeDatasetSpecifications(DatasetSpecifications):
     initial_dataset: DlgkeAvailableDataset
     splits: list[DatasetSplit] = Field(
         # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
@@ -138,9 +142,19 @@ class DglkeDatasetSpecifications(SQLModel):
             }
         }
     )
+    one_relation_type: bool = Field(
+        True,
+        description="If set to `True`, only one relation type with name `relation` "
+        "will be created to fit all relations from the dataset, and a property with "
+        "name `_relation_type` will be added to each relation to specify the original "
+        "relation type. This behaviour is usefull because some datasets have "
+        "thousands of relation types and kuzu does not cope well with it. "
+        "If set to `False`, each relation type will be created as a separate relation "
+        "type.",
+    )
 
 
-class StixDatasetSpecifications(SQLModel):
+class StixDatasetSpecifications(DatasetSpecifications):
     file_content: str = Field(
         # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
         schema_extra={

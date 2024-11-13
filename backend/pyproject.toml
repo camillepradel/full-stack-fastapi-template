@@ -26,7 +26,7 @@ sqlmodel = "^0.0.16"
 bcrypt = "4.0.1"
 pydantic-settings = "^2.2.1"
 sentry-sdk = {extras = ["fastapi"], version = "^1.40.6"}
-kuzu = "0.6.0"
+kuzu = "0.6.1"
 torch = {version = "2.1.0", source = "pytorch_cpu"}
 torch-scatter = {version = "2.1.2", source = "pyg_cpu"}
 torch-sparse = {version = "0.6.18", source = "pyg_cpu"}
