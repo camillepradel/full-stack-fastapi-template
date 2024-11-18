@@ -138,7 +138,7 @@ class DatasetSpecifications(SQLModel):
 class DglkeDatasetSpecifications(DatasetSpecifications):
     initial_dataset: DlgkeAvailableDataset
     splits: list[DatasetSplit] = Field(
-        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
         schema_extra={
             "json_schema_extra": {
                 "uniqueItems": True,
@@ -159,7 +159,7 @@ class DglkeDatasetSpecifications(DatasetSpecifications):
 
 class StixDatasetSpecifications(DatasetSpecifications):
     file_content: str = Field(
-        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
         schema_extra={
             "json_schema_extra": {
                 "format": "data-url",
@@ -263,7 +263,14 @@ class Node(SQLModel):
 
 
 class DatasetContent(SQLModel):
-    metadata: DatasetPublic
+    # `metadata` field is already used in SQLModel, so we use metadata_ here and rename the column and json field
+    metadata_: DatasetPublic = Field(
+        sa_column=Column("metadata"),
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
+        schema_extra={
+            "validation_alias": "metadata",
+        },
+    )
     relations: list[Relation]
     nodes: list[Node]
 
