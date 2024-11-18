@@ -20,9 +20,7 @@ class DatasetBuilder(ABC):
         return None
 
     @abstractmethod
-    def instantiate_dataset_in_kuzu(
-        self, dataset: Dataset, specifications: DatasetSpecifications
-    ) -> None:
+    def instantiate_dataset_in_kuzu(self) -> None:
         """
         Instantiates the dataset in the Kuzu DB.
         """

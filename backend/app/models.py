@@ -1,6 +1,8 @@
 import sys
+import uuid
 from enum import Enum
 
+from prefect.client.schemas import StateType
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
@@ -49,6 +51,7 @@ class User(UserBase, table=True):
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner")
     datasets: list["Dataset"] = Relationship(back_populates="owner")
+    workflows: list["Workflow"] = Relationship(back_populates="owner")
 
 
 # Properties to return via API, id is always required
@@ -188,7 +191,7 @@ class DatasetBase(SQLModel):
 
 class DatasetCreate(DatasetBase):
     specifications: DglkeDatasetSpecifications | StixDatasetSpecifications
-    sampling: DatasetRatioSampling | DatasetCountSampling | None
+    sampling: DatasetRatioSampling | DatasetCountSampling | None = None
 
 
 class Dataset(DatasetBase, table=True):
@@ -208,6 +211,8 @@ class Dataset(DatasetBase, table=True):
         default=None, foreign_key="graphdisplayspecifications.id"
     )
     graph_display_specifications: GraphDisplaySpecifications | None = Relationship()
+
+    workflows: list["Workflow"] = Relationship(back_populates="related_dataset")
 
     def _get_specifications(self):
         # TODO: remove this function if never used
@@ -236,6 +241,7 @@ class DatasetPublic(DatasetBase):
     id: int
     owner_id: int
     graph_display_specifications: GraphDisplaySpecifications | None
+    workflows: list["WorkflowPublic"]
 
 
 class DatasetsPublic(SQLModel):
@@ -260,3 +266,35 @@ class DatasetContent(SQLModel):
     metadata: DatasetPublic
     relations: list[Relation]
     nodes: list[Node]
+
+
+class WorkflowType(str, Enum):
+    build_dataset = "build_dataset"
+
+
+# Shared properties
+class WorkflowBase(SQLModel):
+    type: WorkflowType
+    description: str
+    state: StateType
+    # TODO: add timestamp_start, timestamp_end
+
+
+# Database model, database table inferred from class name
+class Workflow(WorkflowBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="workflows")
+    related_dataset_id: int | None = Field(
+        default=None, foreign_key="dataset.id", nullable=False
+    )
+    related_dataset: Dataset | None = Relationship(back_populates="workflows")
+    prefect_flow_run_id: uuid.UUID
+    is_remote: bool
+
+
+# Properties to return via API, id is always required
+class WorkflowPublic(WorkflowBase):
+    id: int
+    owner_id: int
+    related_dataset_id: int | None

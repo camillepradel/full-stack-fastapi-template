@@ -2,14 +2,11 @@ import inspect
 from collections.abc import Sequence
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from sqlmodel import func, select
 
+from app.api.datasets.build_dataset import build_dataset
 from app.api.datasets.datasets import read_dataset_from_kuzu
-from app.api.datasets.dglke_dataset_builder import DglkeDatasetBuilder
-from app.api.datasets.stix_dataset_builder import (
-    StixDatasetBuilder,
-)
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Dataset,
@@ -19,8 +16,6 @@ from app.models import (
     DatasetPublic,
     DatasetRatioSampling,
     DatasetsPublic,
-    DglkeDatasetSpecifications,
-    StixDatasetSpecifications,
 )
 from app.utils import get_timestamp_str
 
@@ -82,6 +77,7 @@ def create_dataset(
     session: SessionDep,
     current_user: CurrentUser,
     dataset_create: DatasetCreate,
+    background_tasks: BackgroundTasks,
 ) -> Dataset:
     """
     Create a new dataset.
@@ -128,25 +124,18 @@ def create_dataset(
         },
     )
 
-    # Instantiate DatasetBuilder according to the specifications type
-    if isinstance(dataset_create.specifications, StixDatasetSpecifications):
-        dataset_builder = StixDatasetBuilder(dataset, dataset_create.specifications)
-    elif isinstance(dataset_create.specifications, DglkeDatasetSpecifications):
-        dataset_builder = DglkeDatasetBuilder(dataset, dataset_create.specifications)
-    else:
-        raise ValueError("Specifications not supported")
-
-    # set graph display specifications adapted to the dataset type
-    dataset.graph_display_specifications = (
-        dataset_builder.get_graph_display_specifications()
-    )
-
-    # Instantiate the dataset in Kuzu
-    dataset_builder.instantiate_dataset_in_kuzu()
-
     session.add(dataset)
     session.commit()
     session.refresh(dataset)
+
+    # build dataset in background
+    background_tasks.add_task(
+        build_dataset,
+        dataset=dataset,
+        dataset_create=dataset_create,
+        session=session,
+        current_user_id=current_user.id,
+    )
 
     return dataset
 

@@ -196,6 +196,7 @@ def test_get_datasets(
         dglke_dataset_name,
         client,
         superuser_token_headers,
+        initial_dataset=DlgkeAvailableDataset.KGDatasetFB15k,
         one_relation_type=True,
         sampling_count=500,
     )

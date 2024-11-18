@@ -1,11 +1,11 @@
 import base64
-import logging
 from pathlib import Path
 
 import kuzu
 import numpy as np
 import pandas as pd
 import stix2
+from prefect import get_run_logger
 
 from app.api.datasets.dataset_builder import DatasetBuilder
 from app.models import (
@@ -13,9 +13,6 @@ from app.models import (
     GraphDisplaySpecifications,
     StixDatasetSpecifications,
 )
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class StixDatasetBuilder(DatasetBuilder):
@@ -118,6 +115,7 @@ class StixDatasetBuilder(DatasetBuilder):
     def instantiate_dataset_in_kuzu(self):
         # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
         #       it in all instantiate_dataset_in_kuzu() functions
+        logger = get_run_logger()
 
         assert isinstance(self.specifications, StixDatasetSpecifications)
         # Initialize database

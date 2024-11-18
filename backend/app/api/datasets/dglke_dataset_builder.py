@@ -1,10 +1,10 @@
-import logging
 from pathlib import Path
 
 import kuzu
 import numpy as np
 import pandas as pd
 from dglke.dataloader import KGDataset, KGDatasetFB15k, KGDatasetWN18
+from prefect import get_run_logger
 from slugify import slugify
 
 from app.api.datasets.dataset_builder import DatasetBuilder
@@ -14,9 +14,6 @@ from app.models import (
     DglkeDatasetSpecifications,
     DlgkeAvailableDataset,
 )
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class DglkeDatasetBuilder(DatasetBuilder):
@@ -40,6 +37,7 @@ class DglkeDatasetBuilder(DatasetBuilder):
     def instantiate_dataset_in_kuzu(self):
         # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
         #       it in all instanciate_dataset_in_kuzu() functions
+        logger = get_run_logger()
 
         assert isinstance(self.specifications, DglkeDatasetSpecifications)
         # Initialize database

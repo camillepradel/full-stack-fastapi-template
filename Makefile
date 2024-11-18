@@ -9,7 +9,7 @@ down:
 
 clean-restart-containers:
 	docker compose down -v
-	docker compose build
+	# docker compose build
 	docker compose up
 
 bash-inside-backend:
