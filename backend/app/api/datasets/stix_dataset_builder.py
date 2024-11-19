@@ -61,9 +61,9 @@ class StixDatasetBuilder(DatasetBuilder):
         )
 
     @classmethod
-    def _stix_objects_to_nodes_df(cls, stix_objects) -> pd.DataFrame:
+    def _stix_objects_to_nodes_df(cls, stix_objects_generator) -> pd.DataFrame:
         nodes_list = []
-        for stix_object in stix_objects:
+        for stix_object in stix_objects_generator:
             if stix_object.type != "relationship":
                 node_dict = {
                     property_name: property_value
@@ -112,6 +112,18 @@ class StixDatasetBuilder(DatasetBuilder):
     def _get_relation_name(cls, relationship_type, source_type, target_type) -> str:
         return f"{source_type.__name__}_{cls._stix_to_kuzu_relation_type(relationship_type)}_{target_type.__name__}"
 
+    @staticmethod
+    def _stix_objects_generator(stix_files_and_contents):
+        for stix_file_and_content in stix_files_and_contents:
+            file = stix_file_and_content[0]
+            content = stix_file_and_content[1]
+            if file.endswith(".jsonl"):
+                for line in content.splitlines():
+                    yield stix2.parse(line)
+            else:
+                stix_data = stix2.parse(content)
+                yield from stix_data.objects
+
     def instantiate_dataset_in_kuzu(self):
         # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
         #       it in all instantiate_dataset_in_kuzu() functions
@@ -127,12 +139,20 @@ class StixDatasetBuilder(DatasetBuilder):
         db = kuzu.Database(db_path)
         conn = kuzu.Connection(db)
 
-        stix_str = base64.b64decode(
-            self.specifications.file_content.split("base64,")[1]
-        ).decode("utf-8")
-        stix_data = stix2.parse(stix_str)
+        def _get_file_and_content(file_content):
+            split = file_content.split(";base64,")
+            file = split[0].split("name=")[1]
+            content = base64.b64decode(split[1]).decode("utf-8")
+            return file, content
 
-        nodes: pd.DataFrame = self._stix_objects_to_nodes_df(stix_data.objects)
+        stix_files_and_contents = [
+            _get_file_and_content(file_content)
+            for file_content in self.specifications.files_content
+        ]
+
+        nodes: pd.DataFrame = self._stix_objects_to_nodes_df(
+            self._stix_objects_generator(stix_files_and_contents)
+        )
         if (
             self.dataset.sampling_count is not None
             or self.dataset.sampling_ratio is not None
@@ -185,7 +205,7 @@ class StixDatasetBuilder(DatasetBuilder):
                     nodes[nodes.id == stix_rel.source_ref].iloc[0].type,
                     nodes[nodes.id == stix_rel.target_ref].iloc[0].type,
                 )
-                for stix_rel in stix_data.objects
+                for stix_rel in self._stix_objects_generator(stix_files_and_contents)
                 if stix_rel.type == "relationship"
             }
         )
@@ -209,7 +229,7 @@ class StixDatasetBuilder(DatasetBuilder):
         conn.execute(statement)
 
         relations: pd.DataFrame = self._stix_objects_to_relations_df(
-            stix_data.objects, nodes
+            self._stix_objects_generator(stix_files_and_contents), nodes
         )
         for relationship_type, source_type, target_type in all_relation_types:
             relation_name = self._get_relation_name(

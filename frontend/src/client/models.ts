@@ -10,7 +10,7 @@ export type Body_login_login_access_token = {
 
 
 export type DatasetContent = {
-	metadata?: DatasetPublic;
+	metadata: DatasetPublic;
 	relations: Array<Relation>;
 	nodes: Array<Node>;
 };
@@ -26,7 +26,7 @@ export type DatasetCountSampling = {
 export type DatasetCreate = {
 	name: string;
 	specifications: DglkeDatasetSpecifications | StixDatasetSpecifications;
-	sampling: DatasetRatioSampling | DatasetCountSampling | null;
+	sampling?: DatasetRatioSampling | DatasetCountSampling | null;
 };
 
 
@@ -36,6 +36,7 @@ export type DatasetPublic = {
 	id: number;
 	owner_id: number;
 	graph_display_specifications: GraphDisplaySpecifications | null;
+	workflows: Array<WorkflowPublic>;
 };
 
 
@@ -60,11 +61,15 @@ export type DatasetsPublic = {
 export type DglkeDatasetSpecifications = {
 	initial_dataset: DlgkeAvailableDataset;
 	splits: Array<DatasetSplit>;
+	/**
+	 * If set to `True`, only one relation type with name `relation` will be created to fit all relations from the dataset, and a property with name `_relation_type` will be added to each relation to specify the original relation type. This behaviour is usefull because some datasets have thousands of relation types and kuzu does not cope well with it. If set to `False`, each relation type will be created as a separate relation type.
+	 */
+	one_relation_type?: boolean;
 };
 
 
 
-export type DlgkeAvailableDataset = 'KGDatasetFB15k' | 'other';
+export type DlgkeAvailableDataset = 'KGDatasetFB15k' | 'KGDatasetWN18';
 
 
 
@@ -142,8 +147,15 @@ export type Relation = {
 
 
 
+/**
+ * Enumeration of state types.
+ */
+export type StateType = 'SCHEDULED' | 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'CRASHED' | 'PAUSED' | 'CANCELLING';
+
+
+
 export type StixDatasetSpecifications = {
-	file_content: string;
+	files_content: Array<string>;
 };
 
 
@@ -219,4 +231,19 @@ export type ValidationError = {
 	msg: string;
 	type: string;
 };
+
+
+
+export type WorkflowPublic = {
+	type: WorkflowType;
+	description: string;
+	state: StateType;
+	id: number;
+	owner_id: number;
+	related_dataset_id: number | null;
+};
+
+
+
+export type WorkflowType = 'build_dataset';
 

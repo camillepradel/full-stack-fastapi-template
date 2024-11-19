@@ -40,6 +40,8 @@ const CreateDatasetForm = () => {
   const onSubmit = (data: IChangeEvent<any, RJSFSchema, any>, _e: any) => mutation.mutate(data.formData);
 
   return (
+    // TODO: find out why we cannot select multiple files at once (we can one by one) when creating a STIX dataset
+    //       it works in the demo: https://rjsf-team.github.io/react-jsonschema-form/
     <Form
       schema={jsonSchema}
       validator={validator}

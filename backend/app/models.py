@@ -158,11 +158,14 @@ class DglkeDatasetSpecifications(DatasetSpecifications):
 
 
 class StixDatasetSpecifications(DatasetSpecifications):
-    file_content: str = Field(
+    files_content: list[str] = Field(
         # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
         schema_extra={
             "json_schema_extra": {
-                "format": "data-url",
+                "items": {
+                    "type": "string",
+                    "format": "data-url",
+                },
             }
         }
     )
@@ -269,6 +272,7 @@ class DatasetContent(SQLModel):
         # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
         schema_extra={
             "validation_alias": "metadata",
+            "serialization_alias": "metadata",
         },
     )
     relations: list[Relation]
