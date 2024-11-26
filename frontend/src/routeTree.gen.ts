@@ -18,11 +18,11 @@ import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
-import { Route as LayoutGraphd3Import } from './routes/_layout/graph_d3'
 import { Route as LayoutGraphcytoscapeImport } from './routes/_layout/graph_cytoscape'
 import { Route as LayoutDatasetssImport } from './routes/_layout/datasetss'
 import { Route as LayoutDatasetsImport } from './routes/_layout/datasets'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as LayoutGraphd3IdImport } from './routes/_layout/graph_d3/$id'
 
 // Create/Update Routes
 
@@ -61,11 +61,6 @@ const LayoutItemsRoute = LayoutItemsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutGraphd3Route = LayoutGraphd3Import.update({
-  path: '/graph_d3',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
 const LayoutGraphcytoscapeRoute = LayoutGraphcytoscapeImport.update({
   path: '/graph_cytoscape',
   getParentRoute: () => LayoutRoute,
@@ -83,6 +78,11 @@ const LayoutDatasetsRoute = LayoutDatasetsImport.update({
 
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutGraphd3IdRoute = LayoutGraphd3IdImport.update({
+  path: '/graph_d3/$id',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -122,10 +122,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutGraphcytoscapeImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/graph_d3': {
-      preLoaderRoute: typeof LayoutGraphd3Import
-      parentRoute: typeof LayoutImport
-    }
     '/_layout/items': {
       preLoaderRoute: typeof LayoutItemsImport
       parentRoute: typeof LayoutImport
@@ -136,6 +132,10 @@ declare module '@tanstack/react-router' {
     }
     '/_layout/': {
       preLoaderRoute: typeof LayoutIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/graph_d3/$id': {
+      preLoaderRoute: typeof LayoutGraphd3IdImport
       parentRoute: typeof LayoutImport
     }
   }
@@ -149,10 +149,10 @@ export const routeTree = rootRoute.addChildren([
     LayoutDatasetsRoute,
     LayoutDatasetssRoute,
     LayoutGraphcytoscapeRoute,
-    LayoutGraphd3Route,
     LayoutItemsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
+    LayoutGraphd3IdRoute,
   ]),
   LoginRoute,
   RecoverPasswordRoute,

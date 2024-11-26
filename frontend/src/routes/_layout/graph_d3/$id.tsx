@@ -3,11 +3,11 @@ import * as d3 from "d3";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Container, Heading } from "@chakra-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { DatasetContent, DatasetsService, Node, OpenAPI, Relation } from "../../client";
+import { DatasetContent, DatasetsService, Node, OpenAPI, Relation } from "../../../client";
 import { D3DragEvent } from "d3";
 import { getProperty } from "dot-prop";
 
-export const Route = createFileRoute("/_layout/graph_d3")({
+export const Route = createFileRoute("/_layout/graph_d3/$id")({
   component: GraphD3,
 });
 
@@ -205,9 +205,10 @@ function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: Gr
 
 // Handles data fetching, controls and calls GraphDisplay component
 function Graph() {
+  const { id: dataset_id } = Route.useParams();
   const { data: dataset_content } = useSuspenseQuery({
     queryKey: ["dataset-content"],
-    queryFn: () => DatasetsService.readDatasetContent({ id: 1 }),
+    queryFn: () => DatasetsService.readDatasetContent({ id: parseInt(dataset_id) }),
   });
 
   const [someNodeFrozen, setSomeNodeFrozen] = useState(false);
@@ -218,6 +219,9 @@ function Graph() {
 
   return (
     <div>
+      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
+        {dataset_content.metadata.name}
+      </Heading>
       <GraphDisplay dataset_content={dataset_content} someNodeFrozen={someNodeFrozen} setSomeNodeFrozen={setSomeNodeFrozen} />
       <Button isDisabled={!someNodeFrozen} onClick={unfreezeNodes}>Unfreeze nodes</Button>
     </div>
@@ -228,9 +232,6 @@ function Graph() {
 function GraphD3() {
   return (
     <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
-        D3 graph
-      </Heading>
       <Suspense fallback={<span>Loading graph...</span>}>
         <Graph />
       </Suspense>
