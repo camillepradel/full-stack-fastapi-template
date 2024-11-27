@@ -1,14 +1,23 @@
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import emails  # type: ignore
 from jinja2 import Template
 from jose import JWTError, jwt
 
 from app.core.config import settings
+
+_T = TypeVar("_T")
+
+
+def batch(iterable: list[_T], n: int = 1) -> Iterable[list[_T]]:
+    iterable_length = len(iterable)
+    for ndx in range(0, iterable_length, n):
+        yield iterable[ndx : min(ndx + n, iterable_length)]
 
 
 def get_timestamp_str() -> str:

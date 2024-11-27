@@ -1,0 +1,247 @@
+import base64
+from pathlib import Path
+
+import kuzu
+import numpy as np
+import pandas as pd
+import stix2
+from prefect import get_run_logger
+
+from app.api.datasets.dataset_builder import DatasetBuilder
+from app.models import (
+    Dataset,
+    GraphDisplaySpecifications,
+    StixDatasetSpecifications,
+)
+
+
+class StixDatasetBuilder(DatasetBuilder):
+    def __init__(self, dataset: Dataset, specifications: StixDatasetSpecifications):
+        super().__init__(dataset, specifications)
+
+    _STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE = {
+        # full list of stix2 properties: https://stix2.readthedocs.io/en/latest/api/stix2.properties.html
+        # TODO: support all types
+        stix2.properties.BooleanProperty: ("BOOLEAN", np.bool_),
+        stix2.properties.FloatProperty: ("FLOAT", np.float32),
+        stix2.properties.IDProperty: ("STRING", np.bytes_),
+        stix2.properties.IntegerProperty: ("INT32", np.int32),
+        stix2.properties.StringProperty: ("STRING", np.bytes_),
+        stix2.properties.TimestampProperty: ("TIMESTAMP", np.datetime64),
+    }
+
+    @staticmethod
+    def _stix_to_kuzu_relation_type(rel_type: str) -> str:
+        return rel_type.replace("-", "_")
+
+    def get_graph_display_specifications(self) -> GraphDisplaySpecifications:
+        return GraphDisplaySpecifications(
+            node_label_field_name="data.name",
+            # STIX icons come from https://github.com/freetaxii/stix2-graphics/tree/master/icons/png
+            node_icons={
+                "AttackPattern": "stix/attack-pattern-noback-flat-300-dpi.png",
+                "Campaign": "stix/campaign-noback-flat-300-dpi.png",
+                "CourseOfAction": "stix/coa-noback-flat-300-dpi.png",
+                "Grouping": "stix/grouping-noback-flat-300-dpi.png",
+                "Identity": "stix/identity-noback-flat-300-dpi.png",
+                "Indicator": "stix/indicator-noback-flat-300-dpi.png",
+                "Infrastructure": "stix/infrastructure-noback-flat-300-dpi.png",
+                "IntrusionSet": "stix/intrusion-set-noback-flat-300-dpi.png",
+                "Location": "stix/location-noback-flat-300-dpi.png",
+                "Malware": "stix/malware-noback-flat-300-dpi.png",
+                "MalwareAnalysis": "stix/malware-analysis-noback-flat-300-dpi.png",
+                "Note": "stix/note-noback-flat-300-dpi.png",
+                "ObservedData": "stix/observed-data-noback-flat-300-dpi.png",
+                "Opinion": "stix/opinion-noback-flat-300-dpi.png",
+                "Report": "stix/report-noback-flat-300-dpi.png",
+                "ThreatActor": "stix/threat-actor-noback-flat-300-dpi.png",
+                "Tool": "stix/tool-noback-flat-300-dpi.png",
+                "Vulnerability": "stix/vulnerability-noback-flat-300-dpi.png",
+            },
+        )
+
+    @classmethod
+    def _stix_objects_to_nodes_df(cls, stix_objects_generator) -> pd.DataFrame:
+        nodes_list = []
+        for stix_object in stix_objects_generator:
+            if stix_object.type != "relationship":
+                node_dict = {
+                    property_name: property_value
+                    for (property_name, property_value) in stix_object.items()
+                    if type(stix_object._properties[property_name])
+                    in cls._STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE
+                }
+                node_dict["type"] = type(stix_object)
+                nodes_list.append(node_dict)
+        return pd.DataFrame(nodes_list)
+
+    @classmethod
+    def _stix_objects_to_relations_df(cls, stix_objects, nodes) -> pd.DataFrame:
+        nodes_list = []
+        for stix_object in stix_objects:
+            # only add relations whose nodes were kept during sampling
+            if (
+                stix_object.type == "relationship"
+                and (nodes.id == stix_object.source_ref).any()
+                and (nodes.id == stix_object.target_ref).any()
+            ):
+                node_dict = {
+                    "f": stix_object.source_ref,
+                    "t": stix_object.target_ref,
+                    "source_type": nodes[nodes.id == stix_object.source_ref]
+                    .iloc[0]
+                    .type,
+                    "target_type": nodes[nodes.id == stix_object.target_ref]
+                    .iloc[0]
+                    .type,
+                }
+                node_dict.update(
+                    {
+                        property_name: stix_object.__getattr__(property_name)
+                        if property_name in stix_object
+                        else None
+                        for property_name, property in stix2.Relationship._properties.items()
+                        if type(property) in cls._STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE
+                    }
+                )
+                nodes_list.append(node_dict)
+        relations = pd.DataFrame(nodes_list)
+        return relations
+
+    @classmethod
+    def _get_relation_name(cls, relationship_type, source_type, target_type) -> str:
+        return f"{source_type.__name__}_{cls._stix_to_kuzu_relation_type(relationship_type)}_{target_type.__name__}"
+
+    @staticmethod
+    def _stix_objects_generator(stix_files_and_contents):
+        for stix_file_and_content in stix_files_and_contents:
+            file = stix_file_and_content[0]
+            content = stix_file_and_content[1]
+            if file.endswith(".jsonl"):
+                for line in content.splitlines():
+                    yield stix2.parse(line)
+            else:
+                stix_data = stix2.parse(content)
+                yield from stix_data.objects
+
+    def instantiate_dataset_in_kuzu(self):
+        # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
+        #       it in all instantiate_dataset_in_kuzu() functions
+        logger = get_run_logger()
+
+        assert isinstance(self.specifications, StixDatasetSpecifications)
+        # Initialize database
+        db_path: Path = Path(self.dataset.kuzu_path)
+        if db_path.exists() and db_path.is_dir():
+            raise RuntimeError(
+                "Path specified for DB already exists. Abort DB creation."
+            )
+        db = kuzu.Database(db_path)
+        conn = kuzu.Connection(db)
+
+        def _get_file_and_content(file_content):
+            split = file_content.split(";base64,")
+            file = split[0].split("name=")[1]
+            content = base64.b64decode(split[1]).decode("utf-8")
+            return file, content
+
+        stix_files_and_contents = [
+            _get_file_and_content(file_content)
+            for file_content in self.specifications.files_content
+        ]
+
+        nodes: pd.DataFrame = self._stix_objects_to_nodes_df(
+            self._stix_objects_generator(stix_files_and_contents)
+        )
+        if (
+            self.dataset.sampling_count is not None
+            or self.dataset.sampling_ratio is not None
+        ):
+            nodes = nodes.sample(
+                n=self.dataset.sampling_count,
+                frac=self.dataset.sampling_ratio,
+            )
+
+        # get list of properties for each type from stix2 library (and not from the data) to allow for adding more data with unseen properties
+        all_node_types = list(nodes.type.unique())
+        type_to_properties = {
+            stix_type: [
+                (
+                    property_name,
+                    self._STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE[type(property)][0],
+                )
+                for property_name, property in stix_type._properties.items()
+                if type(property) in self._STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE
+            ]
+            for stix_type in all_node_types
+        }
+
+        logger.info(f"create {len(all_node_types)} node classes")
+        statement = ""
+        for stix_type, properties in type_to_properties.items():
+            statement += f"CREATE NODE TABLE {stix_type.__name__}({', '.join(property_name + ' ' + property_type for (property_name, property_type) in properties)}, PRIMARY KEY (id));\n"
+        conn.execute(statement)
+
+        for stix_type in type_to_properties.keys():
+            class_name: str = stix_type.__name__
+            logger.info(f"create all node instances of type {class_name}")
+            typenodes = nodes[nodes.type == stix_type]  # noqa: F841
+            typenodes = typenodes.drop("type", axis=1)
+            typenodes = typenodes.dropna(axis=1, how="all")
+            # to generate statement, we use typenodes.columns (and not properties from type_to_properties) to make sure there are no reference to absent columns
+            statement = (
+                "LOAD FROM typenodes CREATE (n:"
+                + class_name
+                + " {"
+                + ", ".join(column + ": " + column for column in typenodes.columns)
+                + "});"
+            )
+            conn.execute(statement)
+
+        all_relation_types = list(
+            {
+                (
+                    stix_rel.relationship_type,
+                    nodes[nodes.id == stix_rel.source_ref].iloc[0].type,
+                    nodes[nodes.id == stix_rel.target_ref].iloc[0].type,
+                )
+                for stix_rel in self._stix_objects_generator(stix_files_and_contents)
+                if stix_rel.type == "relationship"
+            }
+        )
+
+        logger.info("create relation types")
+        # TODO?: use relationship table group (https://docs.kuzudb.com/cypher/data-definition/create-table/#create-relationship-table-group)
+        relation_properties = {
+            property_name: self._STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE[type(property)][
+                0
+            ]
+            for property_name, property in stix2.Relationship._properties.items()
+            if type(property) in self._STIX_TO_KUZU_AND_PANDAS_PROPERTY_TYPE
+        }
+        properties_in_create_statement: str = ", ".join(
+            property_name + " " + property_type
+            for property_name, property_type in relation_properties.items()
+        )
+        statement = ""
+        for relationship_type, source_type, target_type in all_relation_types:
+            statement += f"CREATE REL TABLE {self._get_relation_name(relationship_type, source_type, target_type)} (FROM {source_type.__name__} TO {target_type.__name__}, {properties_in_create_statement});\n"
+        conn.execute(statement)
+
+        relations: pd.DataFrame = self._stix_objects_to_relations_df(
+            self._stix_objects_generator(stix_files_and_contents), nodes
+        )
+        for relationship_type, source_type, target_type in all_relation_types:
+            relation_name = self._get_relation_name(
+                relationship_type, source_type, target_type
+            )
+            logger.info(f"create relation triples of type {relation_name}")
+            type_relations = relations[
+                (relations.relationship_type == relationship_type)
+                & (relations.source_type == source_type)
+                & (relations.target_type == target_type)
+            ]  # noqa: F841
+            type_relations = type_relations.drop("source_type", axis=1)
+            type_relations = type_relations.drop("target_type", axis=1)
+            statement = f"COPY {relation_name} FROM type_relations"
+            conn.execute(statement)

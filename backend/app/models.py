@@ -1,6 +1,8 @@
 import sys
+import uuid
 from enum import Enum
 
+from prefect.client.schemas import StateType
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
@@ -49,6 +51,7 @@ class User(UserBase, table=True):
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner")
     datasets: list["Dataset"] = Relationship(back_populates="owner")
+    workflows: list["Workflow"] = Relationship(back_populates="owner")
 
 
 # Properties to return via API, id is always required
@@ -125,27 +128,44 @@ class DatasetSplit(str, Enum):
 
 class DlgkeAvailableDataset(str, Enum):
     KGDatasetFB15k = "KGDatasetFB15k"
-    other = "other"
+    KGDatasetWN18 = "KGDatasetWN18"
 
 
-class DglkeDatasetSpecifications(SQLModel):
+class DatasetSpecifications(SQLModel):
+    pass
+
+
+class DglkeDatasetSpecifications(DatasetSpecifications):
     initial_dataset: DlgkeAvailableDataset
     splits: list[DatasetSplit] = Field(
-        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
         schema_extra={
             "json_schema_extra": {
                 "uniqueItems": True,
             }
         }
     )
+    one_relation_type: bool = Field(
+        True,
+        description="If set to `True`, only one relation type with name `relation` "
+        "will be created to fit all relations from the dataset, and a property with "
+        "name `_relation_type` will be added to each relation to specify the original "
+        "relation type. This behaviour is usefull because some datasets have "
+        "thousands of relation types and kuzu does not cope well with it. "
+        "If set to `False`, each relation type will be created as a separate relation "
+        "type.",
+    )
 
 
-class StixDatasetSpecifications(SQLModel):
-    file_content: str = Field(
-        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780
+class StixDatasetSpecifications(DatasetSpecifications):
+    files_content: list[str] = Field(
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
         schema_extra={
             "json_schema_extra": {
-                "format": "data-url",
+                "items": {
+                    "type": "string",
+                    "format": "data-url",
+                },
             }
         }
     )
@@ -174,7 +194,7 @@ class DatasetBase(SQLModel):
 
 class DatasetCreate(DatasetBase):
     specifications: DglkeDatasetSpecifications | StixDatasetSpecifications
-    sampling: DatasetRatioSampling | DatasetCountSampling | None
+    sampling: DatasetRatioSampling | DatasetCountSampling | None = None
 
 
 class Dataset(DatasetBase, table=True):
@@ -194,6 +214,8 @@ class Dataset(DatasetBase, table=True):
         default=None, foreign_key="graphdisplayspecifications.id"
     )
     graph_display_specifications: GraphDisplaySpecifications | None = Relationship()
+
+    workflows: list["Workflow"] = Relationship(back_populates="related_dataset")
 
     def _get_specifications(self):
         # TODO: remove this function if never used
@@ -222,6 +244,7 @@ class DatasetPublic(DatasetBase):
     id: int
     owner_id: int
     graph_display_specifications: GraphDisplaySpecifications | None
+    workflows: list["WorkflowPublic"]
 
 
 class DatasetsPublic(SQLModel):
@@ -243,6 +266,46 @@ class Node(SQLModel):
 
 
 class DatasetContent(SQLModel):
-    metadata: DatasetPublic
+    # `metadata` field is already used in SQLModel, so we use metadata_ here and rename the column and json field
+    metadata_: DatasetPublic = Field(
+        sa_column=Column("metadata"),
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
+        schema_extra={
+            "validation_alias": "metadata",
+            "serialization_alias": "metadata",
+        },
+    )
     relations: list[Relation]
     nodes: list[Node]
+
+
+class WorkflowType(str, Enum):
+    build_dataset = "build_dataset"
+
+
+# Shared properties
+class WorkflowBase(SQLModel):
+    type: WorkflowType
+    description: str
+    state: StateType
+    # TODO: add timestamp_start, timestamp_end
+
+
+# Database model, database table inferred from class name
+class Workflow(WorkflowBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    owner_id: int | None = Field(default=None, foreign_key="user.id", nullable=False)
+    owner: User | None = Relationship(back_populates="workflows")
+    related_dataset_id: int | None = Field(
+        default=None, foreign_key="dataset.id", nullable=False
+    )
+    related_dataset: Dataset | None = Relationship(back_populates="workflows")
+    prefect_flow_run_id: uuid.UUID
+    is_remote: bool
+
+
+# Properties to return via API, id is always required
+class WorkflowPublic(WorkflowBase):
+    id: int
+    owner_id: int
+    related_dataset_id: int | None

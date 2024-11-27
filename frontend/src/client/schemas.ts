@@ -44,6 +44,7 @@ export const $DatasetContent = {
 	properties: {
 		metadata: {
 	type: 'DatasetPublic',
+	isRequired: true,
 },
 		relations: {
 	type: 'array',
@@ -96,7 +97,6 @@ export const $DatasetCreate = {
 }, {
 	type: 'null',
 }],
-	isRequired: true,
 },
 	},
 } as const;
@@ -122,6 +122,13 @@ export const $DatasetPublic = {
 }, {
 	type: 'null',
 }],
+	isRequired: true,
+},
+		workflows: {
+	type: 'array',
+	contains: {
+		type: 'WorkflowPublic',
+	},
 	isRequired: true,
 },
 	},
@@ -172,12 +179,17 @@ export const $DglkeDatasetSpecifications = {
 	},
 	isRequired: true,
 },
+		one_relation_type: {
+	type: 'boolean',
+	description: `If set to \`True\`, only one relation type with name \`relation\` will be created to fit all relations from the dataset, and a property with name \`_relation_type\` will be added to each relation to specify the original relation type. This behaviour is usefull because some datasets have thousands of relation types and kuzu does not cope well with it. If set to \`False\`, each relation type will be created as a separate relation type.`,
+	default: true,
+},
 	},
 } as const;
 
 export const $DlgkeAvailableDataset = {
 	type: 'Enum',
-	enum: ['KGDatasetFB15k','other',],
+	enum: ['KGDatasetFB15k','KGDatasetWN18',],
 } as const;
 
 export const $GraphDisplaySpecifications = {
@@ -368,12 +380,20 @@ export const $Relation = {
 	},
 } as const;
 
+export const $StateType = {
+	type: 'Enum',
+	enum: ['SCHEDULED','PENDING','RUNNING','COMPLETED','FAILED','CANCELLED','CRASHED','PAUSED','CANCELLING',],
+} as const;
+
 export const $StixDatasetSpecifications = {
 	properties: {
-		file_content: {
+		files_content: {
+	type: 'array',
+	contains: {
 	type: 'string',
-	isRequired: true,
 	format: 'data-url',
+},
+	isRequired: true,
 },
 	},
 } as const;
@@ -580,4 +600,43 @@ export const $ValidationError = {
 	isRequired: true,
 },
 	},
+} as const;
+
+export const $WorkflowPublic = {
+	properties: {
+		type: {
+	type: 'WorkflowType',
+	isRequired: true,
+},
+		description: {
+	type: 'string',
+	isRequired: true,
+},
+		state: {
+	type: 'StateType',
+	isRequired: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+		related_dataset_id: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $WorkflowType = {
+	type: 'Enum',
+	enum: ['build_dataset',],
 } as const;

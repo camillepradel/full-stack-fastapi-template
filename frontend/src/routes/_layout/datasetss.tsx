@@ -2,6 +2,7 @@ import {
   Container,
   Flex,
   Heading,
+  ListItem,
   Skeleton,
   Table,
   TableContainer,
@@ -10,6 +11,7 @@ import {
   Th,
   Thead,
   Tr,
+  UnorderedList,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -37,6 +39,13 @@ function ItemsTableBody() {
           <Td>{dataset.id}</Td>
           <Td>{dataset.name}</Td>
           <Td>
+            <UnorderedList>
+              {dataset.workflows.map((workflow) => (
+                <ListItem>{workflow.description} - {workflow.state}</ListItem>
+              ))}
+            </UnorderedList>
+          </Td>
+          <Td>
             <ActionsMenu type={"Dataset"} value={dataset} /> NOT WORKING
           </Td>
         </Tr>
@@ -52,6 +61,7 @@ function DatasetsTable() {
           <Tr>
             <Th>ID</Th>
             <Th>Name</Th>
+            <Th>Flows</Th>
           </Tr>
         </Thead>
         <ErrorBoundary

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -21,7 +23,8 @@ app = FastAPI(
     generate_unique_id_function=custom_generate_unique_id,
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+if Path("./static").is_dir():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:

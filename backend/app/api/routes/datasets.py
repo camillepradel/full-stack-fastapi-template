@@ -2,19 +2,11 @@ import inspect
 from collections.abc import Sequence
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from sqlmodel import func, select
 
+from app.api.datasets.build_dataset import build_dataset
 from app.api.datasets.datasets import read_dataset_from_kuzu
-from app.api.datasets.dglke_datasets import (
-    instanciate_dataset_in_kuzu as dglke_instanciate_dataset_in_kuzu,
-)
-from app.api.datasets.stix_datasets import (
-    get_graph_display_specifications as stix_get_graph_display_specifications,
-)
-from app.api.datasets.stix_datasets import (
-    instanciate_dataset_in_kuzu as stix_instanciate_dataset_in_kuzu,
-)
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Dataset,
@@ -24,8 +16,6 @@ from app.models import (
     DatasetPublic,
     DatasetRatioSampling,
     DatasetsPublic,
-    DglkeDatasetSpecifications,
-    StixDatasetSpecifications,
 )
 from app.utils import get_timestamp_str
 
@@ -87,6 +77,7 @@ def create_dataset(
     session: SessionDep,
     current_user: CurrentUser,
     dataset_create: DatasetCreate,
+    background_tasks: BackgroundTasks,
 ) -> Dataset:
     """
     Create a new dataset.
@@ -109,13 +100,6 @@ def create_dataset(
     specifications_class_name = type(dataset_create.specifications).__name__
     specifications_value = dataset_create.specifications.model_dump_json()
 
-    # get graph display specifications adapted to the dataset type
-    graph_display_specifications = (
-        stix_get_graph_display_specifications()
-        if isinstance(dataset_create.specifications, StixDatasetSpecifications)
-        else None
-    )
-
     # Create and save the dataset into in DB
     dataset = Dataset().model_validate(
         dataset_create,
@@ -137,20 +121,21 @@ def create_dataset(
                 and isinstance(dataset_create.sampling, DatasetCountSampling)
                 else None
             ),
-            "graph_display_specifications": graph_display_specifications,
         },
     )
+
     session.add(dataset)
     session.commit()
     session.refresh(dataset)
 
-    # Instantiate the dataset in Kuzu
-    if isinstance(dataset_create.specifications, DglkeDatasetSpecifications):
-        dglke_instanciate_dataset_in_kuzu(dataset, dataset_create.specifications)
-    elif isinstance(dataset_create.specifications, StixDatasetSpecifications):
-        stix_instanciate_dataset_in_kuzu(dataset, dataset_create.specifications)
-    else:
-        raise ValueError("Specifications not supported")
+    # build dataset in background
+    background_tasks.add_task(
+        build_dataset,
+        dataset=dataset,
+        dataset_create=dataset_create,
+        session=session,
+        current_user_id=current_user.id,
+    )
 
     return dataset
 

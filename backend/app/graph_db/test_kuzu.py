@@ -1,9 +1,7 @@
 # TODO: remove this file and write actual tests
 import math
 import shutil
-from collections.abc import Iterable
 from pathlib import Path
-from typing import TypeVar
 
 import kuzu
 import pandas as pd
@@ -11,13 +9,7 @@ from dglke.dataloader import KGDatasetFB15k
 from slugify import slugify
 from tqdm import tqdm
 
-_T = TypeVar("_T")
-
-
-def batch(iterable: list[_T], n: int = 1) -> Iterable[list[_T]]:
-    iterable_length = len(iterable)
-    for ndx in range(0, iterable_length, n):
-        yield iterable[ndx : min(ndx + n, iterable_length)]
+from app.utils import batch
 
 
 def label_to_class_or_relation(label: str):
