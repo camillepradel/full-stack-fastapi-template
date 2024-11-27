@@ -14,7 +14,7 @@ import {
   UnorderedList,
 } from "@chakra-ui/react"
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
@@ -38,6 +38,7 @@ function ItemsTableBody() {
         <Tr key={dataset.id}>
           <Td>{dataset.id}</Td>
           <Td>{dataset.name}</Td>
+          <Td><Link to={'/graph_d3/$id'} params={{ id: dataset.id.toString() }}>D3</Link></Td>
           <Td>
             <UnorderedList>
               {dataset.workflows.map((workflow) => (
@@ -61,6 +62,7 @@ function DatasetsTable() {
           <Tr>
             <Th>ID</Th>
             <Th>Name</Th>
+            <Th>Browse</Th>
             <Th>Flows</Th>
           </Tr>
         </Thead>
