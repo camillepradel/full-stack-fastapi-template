@@ -11,6 +11,10 @@ from jose import JWTError, jwt
 from app.core.config import settings
 
 
+def get_timestamp_str() -> str:
+    return str(datetime.now()).replace(" ", "_")
+
+
 @dataclass
 class EmailData:
     html_content: str

@@ -40,6 +40,178 @@ export const $Body_login_login_access_token = {
 	},
 } as const;
 
+export const $DatasetContent = {
+	properties: {
+		metadata: {
+	type: 'DatasetPublic',
+},
+		relations: {
+	type: 'array',
+	contains: {
+		type: 'Relation',
+	},
+	isRequired: true,
+},
+		nodes: {
+	type: 'array',
+	contains: {
+		type: 'Node',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DatasetCountSampling = {
+	properties: {
+		count: {
+	type: 'number',
+	isRequired: true,
+	exclusiveMinimum: 0,
+},
+	},
+} as const;
+
+export const $DatasetCreate = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		specifications: {
+	type: 'any-of',
+	contains: [{
+	type: 'DglkeDatasetSpecifications',
+}, {
+	type: 'StixDatasetSpecifications',
+}],
+	isRequired: true,
+},
+		sampling: {
+	type: 'any-of',
+	contains: [{
+	type: 'DatasetRatioSampling',
+}, {
+	type: 'DatasetCountSampling',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DatasetPublic = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		id: {
+	type: 'number',
+	isRequired: true,
+},
+		owner_id: {
+	type: 'number',
+	isRequired: true,
+},
+		graph_display_specifications: {
+	type: 'any-of',
+	contains: [{
+	type: 'GraphDisplaySpecifications',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DatasetRatioSampling = {
+	properties: {
+		ratio: {
+	type: 'number',
+	isRequired: true,
+	maximum: 1,
+	exclusiveMinimum: 0,
+},
+	},
+} as const;
+
+export const $DatasetSplit = {
+	type: 'Enum',
+	enum: ['train','validation','test',],
+} as const;
+
+export const $DatasetsPublic = {
+	properties: {
+		data: {
+	type: 'array',
+	contains: {
+		type: 'DatasetPublic',
+	},
+	isRequired: true,
+},
+		count: {
+	type: 'number',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DglkeDatasetSpecifications = {
+	properties: {
+		initial_dataset: {
+	type: 'DlgkeAvailableDataset',
+	isRequired: true,
+},
+		splits: {
+	type: 'array',
+	contains: {
+		type: 'DatasetSplit',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $DlgkeAvailableDataset = {
+	type: 'Enum',
+	enum: ['KGDatasetFB15k','other',],
+} as const;
+
+export const $GraphDisplaySpecifications = {
+	properties: {
+		id: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+},
+		node_label_field_name: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+}, {
+	type: 'null',
+}],
+},
+		node_icons: {
+	type: 'any-of',
+	contains: [{
+	type: 'dictionary',
+	contains: {
+	type: 'string',
+},
+}, {
+	type: 'null',
+}],
+},
+	},
+} as const;
+
 export const $HTTPValidationError = {
 	properties: {
 		detail: {
@@ -148,6 +320,60 @@ export const $NewPassword = {
 		new_password: {
 	type: 'string',
 	isRequired: true,
+},
+	},
+} as const;
+
+export const $Node = {
+	properties: {
+		id: {
+	type: 'string',
+	isRequired: true,
+},
+		type: {
+	type: 'string',
+	isRequired: true,
+},
+		data: {
+	type: 'dictionary',
+	contains: {
+	properties: {
+	},
+},
+},
+	},
+} as const;
+
+export const $Relation = {
+	properties: {
+		source: {
+	type: 'string',
+	isRequired: true,
+},
+		target: {
+	type: 'string',
+	isRequired: true,
+},
+		type: {
+	type: 'string',
+	isRequired: true,
+},
+		data: {
+	type: 'dictionary',
+	contains: {
+	properties: {
+	},
+},
+},
+	},
+} as const;
+
+export const $StixDatasetSpecifications = {
+	properties: {
+		file_content: {
+	type: 'string',
+	isRequired: true,
+	format: 'data-url',
 },
 	},
 } as const;

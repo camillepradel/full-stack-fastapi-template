@@ -9,6 +9,73 @@ export type Body_login_login_access_token = {
 
 
 
+export type DatasetContent = {
+	metadata?: DatasetPublic;
+	relations: Array<Relation>;
+	nodes: Array<Node>;
+};
+
+
+
+export type DatasetCountSampling = {
+	count: number;
+};
+
+
+
+export type DatasetCreate = {
+	name: string;
+	specifications: DglkeDatasetSpecifications | StixDatasetSpecifications;
+	sampling: DatasetRatioSampling | DatasetCountSampling | null;
+};
+
+
+
+export type DatasetPublic = {
+	name: string;
+	id: number;
+	owner_id: number;
+	graph_display_specifications: GraphDisplaySpecifications | null;
+};
+
+
+
+export type DatasetRatioSampling = {
+	ratio: number;
+};
+
+
+
+export type DatasetSplit = 'train' | 'validation' | 'test';
+
+
+
+export type DatasetsPublic = {
+	data: Array<DatasetPublic>;
+	count: number;
+};
+
+
+
+export type DglkeDatasetSpecifications = {
+	initial_dataset: DlgkeAvailableDataset;
+	splits: Array<DatasetSplit>;
+};
+
+
+
+export type DlgkeAvailableDataset = 'KGDatasetFB15k' | 'other';
+
+
+
+export type GraphDisplaySpecifications = {
+	id?: number | null;
+	node_label_field_name?: string | null;
+	node_icons?: Record<string, string> | null;
+};
+
+
+
 export type HTTPValidationError = {
 	detail?: Array<ValidationError>;
 };
@@ -54,6 +121,29 @@ export type Message = {
 export type NewPassword = {
 	token: string;
 	new_password: string;
+};
+
+
+
+export type Node = {
+	id: string;
+	type: string;
+	data?: Record<string, unknown>;
+};
+
+
+
+export type Relation = {
+	source: string;
+	target: string;
+	type: string;
+	data?: Record<string, unknown>;
+};
+
+
+
+export type StixDatasetSpecifications = {
+	file_content: string;
 };
 
 
