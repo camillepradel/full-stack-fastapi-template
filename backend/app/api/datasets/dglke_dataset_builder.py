@@ -1,19 +1,20 @@
-from pathlib import Path
-
 import kuzu
 import numpy as np
 import pandas as pd
 from dglke.dataloader import KGDataset, KGDatasetFB15k, KGDatasetWN18
 from prefect import get_run_logger
 from slugify import slugify
+from sqlmodel import Session
 
 from app.api.datasets.dataset_builder import DatasetBuilder
 from app.models import (
     Dataset,
+    DatasetSchema,
     DatasetSplit,
     DglkeDatasetSpecifications,
     DlgkeAvailableDataset,
 )
+from app.utils import setup_kuzu_connection
 
 
 class DglkeDatasetBuilder(DatasetBuilder):
@@ -34,20 +35,12 @@ class DglkeDatasetBuilder(DatasetBuilder):
         DlgkeAvailableDataset.KGDatasetWN18: KGDatasetWN18,
     }
 
-    def instantiate_dataset_in_kuzu(self):
-        # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
-        #       it in all instanciate_dataset_in_kuzu() functions
+    @setup_kuzu_connection(create_database=True)
+    def instantiate_dataset_in_kuzu(
+        self, session: Session, conn: kuzu.Connection
+    ) -> DatasetSchema:
         logger = get_run_logger()
-
         assert isinstance(self.specifications, DglkeDatasetSpecifications)
-        # Initialize database
-        db_path: Path = Path(self.dataset.kuzu_path)
-        if db_path.exists() and db_path.is_dir():
-            raise RuntimeError(
-                "Path specified for DB already exists. Abort DB creation."
-            )
-        db = kuzu.Database(db_path)
-        conn = kuzu.Connection(db)
 
         dglke_class = self._AVAILABLE_DATASET_TO_DGLKE_CLASS[
             self.specifications.initial_dataset
@@ -142,3 +135,6 @@ class DglkeDatasetBuilder(DatasetBuilder):
                     )
                     statement: str = f"COPY {self._label_to_class_or_relation(relation_name)} FROM type_relations_df"
                     conn.execute(statement)
+
+        logger.info("set dataset schema in database")
+        self._set_schema(session)

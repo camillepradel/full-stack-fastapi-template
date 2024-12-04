@@ -8,7 +8,9 @@ from sqlmodel import func, select
 from app.api.datasets.build_dataset import build_dataset
 from app.api.datasets.datasets import read_dataset_from_kuzu
 from app.api.deps import CurrentUser, SessionDep
+from app.api.processors.run_processor import run_processor
 from app.models import (
+    ApplyProcessor,
     Dataset,
     DatasetContent,
     DatasetCountSampling,
@@ -53,7 +55,7 @@ def read_datasets(
     return DatasetsPublic(data=datasets, count=count)
 
 
-@router.get("/content/{id}", response_model=DatasetContent)
+@router.get("/{id}/content", response_model=DatasetContent)
 def read_dataset_content(
     session: SessionDep, current_user: CurrentUser, id: int
 ) -> DatasetContent:
@@ -101,7 +103,7 @@ def create_dataset(
     specifications_value = dataset_create.specifications.model_dump_json()
 
     # Create and save the dataset into in DB
-    dataset = Dataset().model_validate(
+    dataset = Dataset.model_validate(
         dataset_create,
         update={
             "owner_id": current_user.id,
@@ -131,7 +133,7 @@ def create_dataset(
     # build dataset in background
     background_tasks.add_task(
         build_dataset,
-        dataset=dataset,
+        dataset_id=dataset.id,
         dataset_create=dataset_create,
         session=session,
         current_user_id=current_user.id,
@@ -150,3 +152,28 @@ def get_create_options() -> dict[str, Any]:
     """
     json_schema: dict[str, Any] = DatasetCreate.model_json_schema()
     return json_schema
+
+
+@router.post("/{id}/apply_processor")
+def apply_processor(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    apply_processor: ApplyProcessor,
+    id: int,
+    background_tasks: BackgroundTasks,
+) -> None:
+    dataset: Dataset | None = session.get(Dataset, id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    if not current_user.is_superuser and (dataset.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+
+    # run processor in background
+    background_tasks.add_task(
+        run_processor,
+        dataset_id=id,
+        apply_processor=apply_processor,
+        session=session,
+        current_user_id=current_user.id,
+    )

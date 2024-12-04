@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 import emails  # type: ignore
+import kuzu
 from jinja2 import Template
 from jose import JWTError, jwt
 
@@ -22,6 +23,35 @@ def batch(iterable: list[_T], n: int = 1) -> Iterable[list[_T]]:
 
 def get_timestamp_str() -> str:
     return str(datetime.now()).replace(" ", "_")
+
+
+def setup_kuzu_connection(create_database: bool = False):
+    """Decorator to setup a Kuzu connection at the beginning of a function."""
+
+    def decorator(func):
+        def wrapper(self, *args, **kwargs):
+            # Initialize database
+            db_path: Path = Path(self.dataset.kuzu_path)
+            if create_database and db_path.exists() and db_path.is_dir():
+                raise RuntimeError(
+                    "Path specified for DB already exists. Abort DB creation."
+                )
+            if not create_database and (not db_path.exists() or not db_path.is_dir()):
+                raise RuntimeError("Path specified for DB does not exists.")
+            db = kuzu.Database(db_path)
+            conn = kuzu.Connection(db)
+
+            # execute the decorated function
+            result = func(self, *args, conn=conn, **kwargs)
+
+            # close the connection
+            conn.close()
+
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 @dataclass

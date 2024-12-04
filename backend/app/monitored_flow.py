@@ -25,7 +25,12 @@ def _update_workflow_states_hook(_: Flow, run: FlowRun, state: State) -> None:
             pass
 
 
-def monitored_flow(description: str, related_object_arg_name: str):
+def monitored_flow(
+    workflow_type: WorkflowType,
+    description: str,
+    related_object_id_arg_name: str = None,
+    related_object_arg_name: str = None,
+):
     """
     A decorator to create a Prefect flow (equivalent of @flow) and monitor it
     by creating a corresponding Workflow object in the database and updating
@@ -33,8 +38,15 @@ def monitored_flow(description: str, related_object_arg_name: str):
 
     Args:
         description (str): A description of the flow.
+        related_object_id_arg_name (str): The name of the argument that is the id
+            of the object related to the workflow (e.g. a Dataset).
+            Either related_object_id_arg_name or related_object_arg_name must be
+            provided.
         related_object_arg_name (str): The name of the argument that is the object
             related to the workflow (e.g. a Dataset).
+            Either related_object_id_arg_name or related_object_arg_name must be
+            provided.
+            TODO: remove if never used
 
     Any decorated function should be called with the following arguments:
     - an argument named after the value of `related_object_arg_name`
@@ -55,7 +67,14 @@ def monitored_flow(description: str, related_object_arg_name: str):
                 on_running=[_update_workflow_states_hook],
             )
             def flow_func(*args, **kwargs):
-                related_object = kwargs[related_object_arg_name]
+                assert (
+                    bool(related_object_arg_name) != bool(related_object_id_arg_name)
+                ), "Either related_object_id_arg_name or related_object_arg_name must be provided."
+                related_object_id = (
+                    kwargs[related_object_arg_name].id
+                    if related_object_arg_name
+                    else kwargs[related_object_id_arg_name]
+                )
                 current_user_id = kwargs["current_user_id"]
                 session = kwargs["session"]
 
@@ -63,18 +82,22 @@ def monitored_flow(description: str, related_object_arg_name: str):
                 assert isinstance(flow_run, FlowRun)
 
                 build_dataset_workflow = Workflow(
-                    type=WorkflowType.build_dataset,
+                    type=workflow_type,
                     description=description,
                     state=flow_run.state.type,
                     owner_id=current_user_id,
-                    related_dataset_id=related_object.id,
+                    related_dataset_id=related_object_id,
                     prefect_flow_run_id=flow_run.id,
                     is_remote=False,
                 )
                 session.add(build_dataset_workflow)
                 session.commit()
                 expected_args = inspect.getfullargspec(func).args
-                for arg_name in [related_object_arg_name, "current_user_id", "session"]:
+                for arg_name in [
+                    related_object_id_arg_name or related_object_arg_name,
+                    "current_user_id",
+                    "session",
+                ]:
                     if arg_name not in expected_args:
                         kwargs.pop(arg_name)
                 return func(*args, **kwargs)

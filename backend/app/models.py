@@ -1,8 +1,13 @@
 import sys
 import uuid
+from abc import ABC, abstractmethod
+from collections.abc import Sequence
+from datetime import datetime
 from enum import Enum
 
 from prefect.client.schemas import StateType
+from pydantic import TypeAdapter
+from sqlalchemy import DateTime, event, func
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
@@ -120,6 +125,19 @@ class NewPassword(SQLModel):
     new_password: str
 
 
+class TimestampedResource(SQLModel):
+    created_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True), server_default=func.now(), nullable=True
+        ),
+    )
+    updated_at: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), onupdate=func.now(), nullable=True),
+    )
+
+
 class DatasetSplit(str, Enum):
     train = "train"
     validation = "validation"
@@ -197,6 +215,83 @@ class DatasetCreate(DatasetBase):
     sampling: DatasetRatioSampling | DatasetCountSampling | None = None
 
 
+class GraphElementProperty(SQLModel):
+    name: str
+    type: str  # TODO: use enum once it is defined (c.f. ongoing work in api/kuzu/datatypes.py)
+
+
+class RelationProperty(GraphElementProperty):
+    pass
+
+
+class NodeProperty(GraphElementProperty):
+    is_primary_key: bool = False
+
+
+class GraphElementType(SQLModel):
+    name: str
+
+
+class NodeType(GraphElementType):
+    properties: Sequence[NodeProperty]
+
+    @property
+    def primary_key(self) -> NodeProperty:
+        return next(prop for prop in self.properties if prop.is_primary_key)
+
+
+class RelationType(GraphElementType):
+    properties: Sequence[RelationProperty]
+
+
+class DatasetSchemaBase(TimestampedResource):
+    pass
+
+
+class DatasetSchema(DatasetSchemaBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    node_types: list[NodeType] = Field(default_factory=list, sa_column=Column(JSON))
+    relation_types: list[RelationType] = Field(
+        default_factory=list, sa_column=Column(JSON)
+    )
+
+
+class DatasetSchemaPublic(DatasetSchemaBase):
+    node_types: list[NodeType]
+    relation_types: list[RelationType]
+
+
+@event.listens_for(DatasetSchema, "before_insert")
+@event.listens_for(DatasetSchema, "before_update")
+def dataset_schema_dump(
+    mapper,  # noqa: ARG001
+    connection,  # noqa: ARG001
+    target,
+) -> DatasetSchema:
+    dataset_schema = target
+    dataset_schema.node_types = TypeAdapter(list[NodeType]).dump_python(
+        dataset_schema.node_types
+    )
+    dataset_schema.relation_types = TypeAdapter(list[RelationType]).dump_python(
+        dataset_schema.relation_types
+    )
+    return dataset_schema
+
+
+@event.listens_for(DatasetSchema, "load")
+def dataset_schema_validate(
+    dataset_schema,
+    context,  # noqa: ARG001
+) -> DatasetSchema:
+    dataset_schema.node_types = TypeAdapter(list[NodeType]).validate_python(
+        dataset_schema.node_types
+    )
+    dataset_schema.relation_types = TypeAdapter(list[RelationType]).validate_python(
+        dataset_schema.relation_types
+    )
+    return dataset_schema
+
+
 class Dataset(DatasetBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     kuzu_path: str
@@ -209,6 +304,11 @@ class Dataset(DatasetBase, table=True):
     # sampling
     sampling_ratio: float | None = Field(gt=0, le=1)
     sampling_count: int | None = Field(gt=0)
+
+    dataset_schema_id: int | None = Field(
+        default=None, foreign_key="datasetschema.id", nullable=True
+    )
+    dataset_schema: DatasetSchema | None = Relationship()
 
     graph_display_specifications_id: int | None = Field(
         default=None, foreign_key="graphdisplayspecifications.id"
@@ -243,6 +343,7 @@ class Dataset(DatasetBase, table=True):
 class DatasetPublic(DatasetBase):
     id: int
     owner_id: int
+    dataset_schema: DatasetSchemaPublic | None
     graph_display_specifications: GraphDisplaySpecifications | None
     workflows: list["WorkflowPublic"]
 
@@ -279,8 +380,124 @@ class DatasetContent(SQLModel):
     nodes: list[Node]
 
 
+class FieldPattern(SQLModel):
+    """
+    Pattern to refer to a field or a set of fields in a dataset schema.
+    """
+
+    graph_element_nature: str  # "node", "relation" or "*"
+    graph_element_type_name: str
+    property_name: str
+
+    def matches(
+        self, graph_element_nature, graph_element_type_name, property_name
+    ) -> bool:
+        return (
+            (
+                self.graph_element_nature == "*"
+                or self.graph_element_nature == graph_element_nature
+            )
+            and (
+                self.graph_element_type_name == "*"
+                or self.graph_element_type_name == graph_element_type_name
+            )
+            and (self.property_name == "*" or self.property_name == property_name)
+        )
+
+
+class ProcessorSpecifications(SQLModel, ABC):
+    @property
+    @abstractmethod
+    def output_properties_patterns(self) -> list[FieldPattern]:
+        """
+        List of fields that will be added to the dataset elements.
+        """
+        pass
+
+
+class NetworXkAlgorithmSpecifications(SQLModel, ABC):
+    @property
+    @abstractmethod
+    def output_properties(self) -> list[FieldPattern]:
+        """
+        List of fields that will be added to the dataset elements.
+        """
+        pass
+
+
+class NetworkXPagerankSpecifications(NetworXkAlgorithmSpecifications):
+    """Specifications on how to run NetworkX PageRank algorithm on the graph and save result (i.e. pagerank values)"""
+
+    pagerank_property_name: str = Field(
+        ..., description="The field to save pagerank in."
+    )
+    directed: bool = Field(
+        ...,
+        description="Whether or not graph should be considered as directed while running the algorithm.",
+    )
+    alpha: float = Field(0.85, description="Damping parameter for PageRank.")
+    # TODO: add other parameters (https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.link_analysis.pagerank_alg.pagerank.html#networkx.algorithms.link_analysis.pagerank_alg.pagerank)
+
+    @property
+    def output_properties(self) -> list[FieldPattern]:
+        return [
+            FieldPattern(
+                graph_element_nature="node",
+                graph_element_type_name="*",
+                property_name=self.pagerank_property_name,
+            ),
+        ]
+
+
+class NetworkXHitsSpecifications(NetworXkAlgorithmSpecifications):
+    """Specifications on how to run NetworkX Hits algorithm on the graph and save result (i.e. authority and hub values)"""
+
+    authority_property_name: str = Field(
+        ..., description="The field to save authority in."
+    )
+    hub_property_name: str = Field(..., description="The field to save hub in.")
+    max_iter: int = Field(
+        100, description="Maximum number of iterations in power method."
+    )
+    tol: float = Field(
+        1e-08,
+        description="Error tolerance used to check convergence in power method iteration.",
+    )
+    normalized: bool = Field(
+        True, description="Normalize results by the sum of all of the values."
+    )
+
+    @property
+    def output_properties(self) -> list[FieldPattern]:
+        return [
+            FieldPattern(
+                graph_element_nature="node",
+                graph_element_type_name="*",
+                property_name=self.authority_property_name,
+            ),
+            FieldPattern(
+                graph_element_nature="node",
+                graph_element_type_name="*",
+                property_name=self.hub_property_name,
+            ),
+        ]
+
+
+class NetworkXProcessorSpecifications(ProcessorSpecifications):
+    algorithm_specifications: NetworkXPagerankSpecifications | NetworkXHitsSpecifications
+
+    @property
+    def output_properties_patterns(self) -> list[FieldPattern]:
+        return self.algorithm_specifications.output_properties
+
+
+class ApplyProcessor(SQLModel):
+    specifications: NetworkXProcessorSpecifications  # | ...
+
+
 class WorkflowType(str, Enum):
     build_dataset = "build_dataset"
+    run_processor = "run_processor"
 
 
 # Shared properties

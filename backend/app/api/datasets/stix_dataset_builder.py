@@ -1,18 +1,20 @@
 import base64
-from pathlib import Path
 
 import kuzu
 import numpy as np
 import pandas as pd
 import stix2
 from prefect import get_run_logger
+from sqlmodel import Session
 
 from app.api.datasets.dataset_builder import DatasetBuilder
 from app.models import (
     Dataset,
+    DatasetSchema,
     GraphDisplaySpecifications,
     StixDatasetSpecifications,
 )
+from app.utils import setup_kuzu_connection
 
 
 class StixDatasetBuilder(DatasetBuilder):
@@ -124,20 +126,12 @@ class StixDatasetBuilder(DatasetBuilder):
                 stix_data = stix2.parse(content)
                 yield from stix_data.objects
 
-    def instantiate_dataset_in_kuzu(self):
-        # TODO: move below setup lines to a common decorator @setup_kuzu_connection and use
-        #       it in all instantiate_dataset_in_kuzu() functions
+    @setup_kuzu_connection(create_database=True)
+    def instantiate_dataset_in_kuzu(
+        self, session: Session, conn: kuzu.Connection
+    ) -> DatasetSchema:
         logger = get_run_logger()
-
         assert isinstance(self.specifications, StixDatasetSpecifications)
-        # Initialize database
-        db_path: Path = Path(self.dataset.kuzu_path)
-        if db_path.exists() and db_path.is_dir():
-            raise RuntimeError(
-                "Path specified for DB already exists. Abort DB creation."
-            )
-        db = kuzu.Database(db_path)
-        conn = kuzu.Connection(db)
 
         def _get_file_and_content(file_content):
             split = file_content.split(";base64,")
@@ -245,3 +239,6 @@ class StixDatasetBuilder(DatasetBuilder):
             type_relations = type_relations.drop("target_type", axis=1)
             statement = f"COPY {relation_name} FROM type_relations"
             conn.execute(statement)
+
+        logger.info("set dataset schema in database")
+        self._set_schema(session)

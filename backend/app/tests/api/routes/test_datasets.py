@@ -94,6 +94,16 @@ def _get_datasets(
     return response
 
 
+def _get_dataset_content(
+    dataset_id: int, client: TestClient, superuser_token_headers: dict[str, str]
+) -> Response:
+    response = client.get(
+        f"{settings.API_V1_STR}/datasets/{dataset_id}/content",
+        headers=superuser_token_headers,
+    )
+    return response
+
+
 def _create_dataset_common_tests(response, dataset_name):
     assert response.status_code == 200
     content = response.json()
@@ -203,6 +213,8 @@ def test_create_stix_dataset(
     assert result.get_num_tuples() == relations_count
     if more_tests:
         more_tests(result)
+
+    # TODO: test the created schema (in this test or somewhere else)
 
 
 def test_create_dglke_dataset(
