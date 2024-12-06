@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from datetime import datetime
 from enum import Enum
+from typing import Generic, TypeVar
 
 from prefect.client.schemas import StateType
 from pydantic import TypeAdapter
@@ -128,13 +129,13 @@ class NewPassword(SQLModel):
 class TimestampedResource(SQLModel):
     created_at: datetime | None = Field(
         default=None,
-        sa_column=Column(
-            DateTime(timezone=True), server_default=func.now(), nullable=True
-        ),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"server_default": func.now(), "nullable": True},
     )
     updated_at: datetime | None = Field(
         default=None,
-        sa_column=Column(DateTime(timezone=True), onupdate=func.now(), nullable=True),
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"onupdate": func.now(), "nullable": True},
     )
 
 
@@ -292,6 +293,97 @@ def dataset_schema_validate(
     return dataset_schema
 
 
+class PropertyStatistics(SQLModel):
+    pass
+
+
+_T = TypeVar("_T")
+
+
+class SymbolicPropertyStatistics(PropertyStatistics, Generic[_T]):
+    value_counts_max: int | None = Field(
+        ...,
+        description="Maximum number of items which have been saved in value_counts; if None, value_counts is untouched.",
+    )
+    value_counts: list[tuple[_T, int]] = Field(
+        ...,
+        description="The list of existing values with their count, sorted in descending order and optinally truncated to `value_counts_max`.",
+    )
+
+
+class NumericPropertyInterval(PropertyStatistics, Generic[_T]):
+    n: int = Field(..., description="Number of cuts used to split values span.")
+    min_max_counts: list[tuple[_T, _T, int]] = Field(
+        ...,
+        description="The list of cuts, whether quantiles or bins, expressed with their min value, max value and number of values they contain.",
+    )
+
+
+class NumericPropertyStatistics(SQLModel, Generic[_T]):
+    min: _T
+    max: _T
+    mean: _T
+    median: _T
+    std: _T
+    quantiles: list[NumericPropertyInterval]
+    bins: list[NumericPropertyInterval]
+
+
+class DatasetStatisticsBase(TimestampedResource):
+    pass
+
+
+class DatasetStatistics(DatasetStatisticsBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    node_type_to_property_to_statistics: dict[
+        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+    ] = Field(default_factory=dict, sa_column=Column(JSON))
+    relation_type_to_property_to_statistics: dict[
+        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+    ] = Field(default_factory=dict, sa_column=Column(JSON))
+    # TODO: add statistics for node and relation types (with at least their counts)
+
+
+class DatasetStatisticsPublic(DatasetStatisticsBase):
+    node_type_to_property_to_statistics: dict[
+        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+    ]
+    relation_type_to_property_to_statistics: dict[
+        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+    ]
+
+
+@event.listens_for(DatasetStatistics, "before_insert")
+@event.listens_for(DatasetStatistics, "before_update")
+def dataset_statistics_dump(
+    mapper,  # noqa: ARG001
+    connection,  # noqa: ARG001
+    target,
+) -> DatasetStatistics:
+    dataset_statistics = target
+    dataset_statistics.node_type_to_property_to_statistics = TypeAdapter(
+        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+    ).dump_python(dataset_statistics.node_type_to_property_to_statistics)
+    dataset_statistics.relation_type_to_property_to_statistics = TypeAdapter(
+        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+    ).dump_python(dataset_statistics.relation_type_to_property_to_statistics)
+    return dataset_statistics
+
+
+@event.listens_for(DatasetStatistics, "load")
+def dataset_statistics_validate(
+    dataset_statistics,
+    context,  # noqa: ARG001
+) -> DatasetStatistics:
+    dataset_statistics.node_type_to_property_to_statistics = TypeAdapter(
+        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+    ).validate_python(dataset_statistics.node_type_to_property_to_statistics)
+    dataset_statistics.relation_type_to_property_to_statistics = TypeAdapter(
+        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+    ).validate_python(dataset_statistics.relation_type_to_property_to_statistics)
+    return dataset_statistics
+
+
 class Dataset(DatasetBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     kuzu_path: str
@@ -309,6 +401,11 @@ class Dataset(DatasetBase, table=True):
         default=None, foreign_key="datasetschema.id", nullable=True
     )
     dataset_schema: DatasetSchema | None = Relationship()
+
+    statistics_id: int | None = Field(
+        default=None, foreign_key="datasetstatistics.id", nullable=True
+    )
+    statistics: DatasetStatistics | None = Relationship()
 
     graph_display_specifications_id: int | None = Field(
         default=None, foreign_key="graphdisplayspecifications.id"

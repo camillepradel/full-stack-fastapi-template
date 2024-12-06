@@ -16,5 +16,27 @@ KUZU_TO_PYTHON_TYPES = {
     "BOOLEAN": bool,
     "UUID": UUID,
     "STRING": str,
+    # TIMESTAMP
     # TODO: handle all datatypes
 }
+
+NUMERIC_PROPERTY_TYPES: list[str] = [
+    "INT8",
+    "INT16",
+    "INT32",
+    "INT64",
+    "INT128",
+    "UINT8",
+    "UINT16",
+    "UINT32",
+    "UINT64",
+    "FLOAT",
+    "DOUBLE",
+    "DECIMAL",
+]
+
+SYMBOLIC_PROPERTY_TYPES = [
+    "BOOLEAN",
+    "UUID",
+    "STRING",
+]

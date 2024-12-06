@@ -215,6 +215,7 @@ def test_create_stix_dataset(
         more_tests(result)
 
     # TODO: test the created schema (in this test or somewhere else)
+    # TODO: test the created statistics (in this test or somewhere else)
 
 
 def test_create_dglke_dataset(
