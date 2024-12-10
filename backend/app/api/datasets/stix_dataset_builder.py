@@ -242,3 +242,5 @@ class StixDatasetBuilder(DatasetBuilder):
 
         logger.info("set dataset schema in database")
         self._set_schema(session)
+        logger.info("set dataset statistics in database")
+        self._set_statistics(session)

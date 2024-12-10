@@ -76,6 +76,9 @@ class NetworkXProcessor(Processor):
                         name=alg_specs.pagerank_property_name, type=PROPERTY_TYPE
                     )
                 )
+
+            # TODO: update dataset statistics in database
+
             # below line is to force update of dataset in db
             # TODO: this is a hack and we should find a better way
             self.dataset.dataset_schema.node_types = (

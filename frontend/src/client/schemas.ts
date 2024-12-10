@@ -1,3 +1,12 @@
+export const $ApplyProcessor = {
+	properties: {
+		specifications: {
+	type: 'NetworkXProcessorSpecifications',
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $Body_login_login_access_token = {
 	properties: {
 		grant_type: {
@@ -115,6 +124,24 @@ export const $DatasetPublic = {
 	type: 'number',
 	isRequired: true,
 },
+		dataset_schema: {
+	type: 'any-of',
+	contains: [{
+	type: 'DatasetSchemaPublic',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+		statistics: {
+	type: 'any-of',
+	contains: [{
+	type: 'DatasetStatistics',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
 		graph_display_specifications: {
 	type: 'any-of',
 	contains: [{
@@ -145,9 +172,109 @@ export const $DatasetRatioSampling = {
 	},
 } as const;
 
+export const $DatasetSchemaPublic = {
+	properties: {
+		created_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		updated_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		node_types: {
+	type: 'array',
+	contains: {
+		type: 'NodeType',
+	},
+	isRequired: true,
+},
+		relation_types: {
+	type: 'array',
+	contains: {
+		type: 'RelationType',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $DatasetSplit = {
 	type: 'Enum',
 	enum: ['train','validation','test',],
+} as const;
+
+export const $DatasetStatistics = {
+	properties: {
+		created_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		updated_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		id: {
+	type: 'any-of',
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+},
+		node_type_to_property_to_statistics: {
+	type: 'dictionary',
+	contains: {
+	type: 'dictionary',
+	contains: {
+	type: 'any-of',
+	contains: [{
+	type: 'SymbolicPropertyStatistics',
+}, {
+	type: 'NumericPropertyStatistics',
+}, {
+	type: 'null',
+}],
+},
+},
+},
+		relation_type_to_property_to_statistics: {
+	type: 'dictionary',
+	contains: {
+	type: 'dictionary',
+	contains: {
+	type: 'any-of',
+	contains: [{
+	type: 'SymbolicPropertyStatistics',
+}, {
+	type: 'NumericPropertyStatistics',
+}, {
+	type: 'null',
+}],
+},
+},
+},
+	},
 } as const;
 
 export const $DatasetsPublic = {
@@ -323,6 +450,72 @@ export const $Message = {
 	},
 } as const;
 
+export const $NetworkXHitsSpecifications = {
+	description: `Specifications on how to run NetworkX Hits algorithm on the graph and save result (i.e. authority and hub values)`,
+	properties: {
+		authority_property_name: {
+	type: 'string',
+	description: `The field to save authority in.`,
+	isRequired: true,
+},
+		hub_property_name: {
+	type: 'string',
+	description: `The field to save hub in.`,
+	isRequired: true,
+},
+		max_iter: {
+	type: 'number',
+	description: `Maximum number of iterations in power method.`,
+	default: 100,
+},
+		tol: {
+	type: 'number',
+	description: `Error tolerance used to check convergence in power method iteration.`,
+	default: 1e-8,
+},
+		normalized: {
+	type: 'boolean',
+	description: `Normalize results by the sum of all of the values.`,
+	default: true,
+},
+	},
+} as const;
+
+export const $NetworkXPagerankSpecifications = {
+	description: `Specifications on how to run NetworkX PageRank algorithm on the graph and save result (i.e. pagerank values)`,
+	properties: {
+		pagerank_property_name: {
+	type: 'string',
+	description: `The field to save pagerank in.`,
+	isRequired: true,
+},
+		directed: {
+	type: 'boolean',
+	description: `Whether or not graph should be considered as directed while running the algorithm.`,
+	isRequired: true,
+},
+		alpha: {
+	type: 'number',
+	description: `Damping parameter for PageRank.`,
+	default: 0.85,
+},
+	},
+} as const;
+
+export const $NetworkXProcessorSpecifications = {
+	properties: {
+		algorithm_specifications: {
+	type: 'any-of',
+	contains: [{
+	type: 'NetworkXPagerankSpecifications',
+}, {
+	type: 'NetworkXHitsSpecifications',
+}],
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $NewPassword = {
 	properties: {
 		token: {
@@ -356,6 +549,102 @@ export const $Node = {
 	},
 } as const;
 
+export const $NodeProperty = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		type: {
+	type: 'string',
+	isRequired: true,
+},
+		is_primary_key: {
+	type: 'boolean',
+	default: false,
+},
+	},
+} as const;
+
+export const $NodeType = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		properties: {
+	type: 'array',
+	contains: {
+		type: 'NodeProperty',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $NumericPropertyInterval = {
+	properties: {
+		n: {
+	type: 'number',
+	description: `Number of cuts used to split values span.`,
+	isRequired: true,
+},
+		min_max_counts: {
+	type: 'array',
+	contains: {
+	type: 'unknown[]',
+	maxItems: 3,
+	minItems: 3,
+},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $NumericPropertyStatistics = {
+	properties: {
+		min: {
+	properties: {
+	},
+	isRequired: true,
+},
+		max: {
+	properties: {
+	},
+	isRequired: true,
+},
+		mean: {
+	properties: {
+	},
+	isRequired: true,
+},
+		median: {
+	properties: {
+	},
+	isRequired: true,
+},
+		std: {
+	properties: {
+	},
+	isRequired: true,
+},
+		quantiles: {
+	type: 'array',
+	contains: {
+		type: 'NumericPropertyInterval',
+	},
+	isRequired: true,
+},
+		bins: {
+	type: 'array',
+	contains: {
+		type: 'NumericPropertyInterval',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $Relation = {
 	properties: {
 		source: {
@@ -380,6 +669,35 @@ export const $Relation = {
 	},
 } as const;
 
+export const $RelationProperty = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		type: {
+	type: 'string',
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $RelationType = {
+	properties: {
+		name: {
+	type: 'string',
+	isRequired: true,
+},
+		properties: {
+	type: 'array',
+	contains: {
+		type: 'RelationProperty',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $StateType = {
 	type: 'Enum',
 	enum: ['SCHEDULED','PENDING','RUNNING','COMPLETED','FAILED','CANCELLED','CRASHED','PAUSED','CANCELLING',],
@@ -392,6 +710,30 @@ export const $StixDatasetSpecifications = {
 	contains: {
 	type: 'string',
 	format: 'data-url',
+},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $SymbolicPropertyStatistics = {
+	properties: {
+		value_counts_max: {
+	type: 'any-of',
+	description: `Maximum number of items which have been saved in value_counts; if None, value_counts is untouched.`,
+	contains: [{
+	type: 'number',
+}, {
+	type: 'null',
+}],
+	isRequired: true,
+},
+		value_counts: {
+	type: 'array',
+	contains: {
+	type: 'unknown[]',
+	maxItems: 2,
+	minItems: 2,
 },
 	isRequired: true,
 },
@@ -638,5 +980,5 @@ export const $WorkflowPublic = {
 
 export const $WorkflowType = {
 	type: 'Enum',
-	enum: ['build_dataset',],
+	enum: ['build_dataset','run_processor',],
 } as const;
