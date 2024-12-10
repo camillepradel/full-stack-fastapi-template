@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,DatasetContent,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,ApplyProcessor,DatasetContent,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -536,6 +536,11 @@ export type TDataReadDatasetContent = {
                 id: number
                 
             }
+export type TDataApplyProcessor = {
+                id: number
+requestBody: ApplyProcessor
+                
+            }
 
 export class DatasetsService {
 
@@ -603,7 +608,7 @@ id,
 } = data;
 		return __request(OpenAPI, {
 			method: 'GET',
-			url: '/api/v1/datasets/content/{id}',
+			url: '/api/v1/datasets/{id}/content',
 			path: {
 				id
 			},
@@ -626,6 +631,30 @@ id,
 				return __request(OpenAPI, {
 			method: 'GET',
 			url: '/api/v1/datasets/create-options/',
+		});
+	}
+
+	/**
+	 * Apply Processor
+	 * @returns unknown Successful Response
+	 * @throws ApiError
+	 */
+	public static applyProcessor(data: TDataApplyProcessor): CancelablePromise<unknown> {
+		const {
+id,
+requestBody,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
+			url: '/api/v1/datasets/{id}/apply_processor',
+			path: {
+				id
+			},
+			body: requestBody,
+			mediaType: 'application/json',
+			errors: {
+				422: `Validation Error`,
+			},
 		});
 	}
 

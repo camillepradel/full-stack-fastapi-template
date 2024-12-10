@@ -118,19 +118,20 @@ class DatasetBuilder(ABC):
                         .to_dict(),
                         bins=[
                             NumericPropertyInterval(
-                                n=bins,
+                                n=n,
                                 min_max_counts=[
                                     (interval.left, interval.right, count)
                                     for interval, count in pd.cut(
                                         graph_element_df[property_column_name],
-                                        bins=bins,
+                                        bins=n,
                                         duplicates="drop",
                                     )
                                     .value_counts()
+                                    .sort_index()
                                     .items()
                                 ],
                             )
-                            for bins in [10]
+                            for n in [10]
                         ],
                         quantiles=[
                             NumericPropertyInterval(

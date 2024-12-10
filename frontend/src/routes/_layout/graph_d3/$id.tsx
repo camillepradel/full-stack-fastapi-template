@@ -6,6 +6,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { DatasetContent, DatasetsService, Node, OpenAPI, Relation } from "../../../client";
 import { D3DragEvent } from "d3";
 import { getProperty } from "dot-prop";
+import DatasetOverview from "../../../components/Datasets/DatasetOverview";
 
 export const Route = createFileRoute("/_layout/graph_d3/$id")({
   component: GraphD3,
@@ -224,6 +225,7 @@ function Graph() {
       </Heading>
       <GraphDisplay dataset_content={dataset_content} someNodeFrozen={someNodeFrozen} setSomeNodeFrozen={setSomeNodeFrozen} />
       <Button isDisabled={!someNodeFrozen} onClick={unfreezeNodes}>Unfreeze nodes</Button>
+      <DatasetOverview dataset={dataset_content.metadata} />
     </div>
   );
 }

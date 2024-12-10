@@ -336,20 +336,20 @@ class DatasetStatisticsBase(TimestampedResource):
 class DatasetStatistics(DatasetStatisticsBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     node_type_to_property_to_statistics: dict[
-        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+        str, dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None]
     ] = Field(default_factory=dict, sa_column=Column(JSON))
     relation_type_to_property_to_statistics: dict[
-        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+        str, dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None]
     ] = Field(default_factory=dict, sa_column=Column(JSON))
     # TODO: add statistics for node and relation types (with at least their counts)
 
 
 class DatasetStatisticsPublic(DatasetStatisticsBase):
     node_type_to_property_to_statistics: dict[
-        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+        str, dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None]
     ]
     relation_type_to_property_to_statistics: dict[
-        str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]
+        str, dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None]
     ]
 
 
@@ -362,10 +362,16 @@ def dataset_statistics_dump(
 ) -> DatasetStatistics:
     dataset_statistics = target
     dataset_statistics.node_type_to_property_to_statistics = TypeAdapter(
-        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+        dict[
+            str,
+            dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None],
+        ]
     ).dump_python(dataset_statistics.node_type_to_property_to_statistics)
     dataset_statistics.relation_type_to_property_to_statistics = TypeAdapter(
-        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+        dict[
+            str,
+            dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None],
+        ]
     ).dump_python(dataset_statistics.relation_type_to_property_to_statistics)
     return dataset_statistics
 
@@ -376,10 +382,16 @@ def dataset_statistics_validate(
     context,  # noqa: ARG001
 ) -> DatasetStatistics:
     dataset_statistics.node_type_to_property_to_statistics = TypeAdapter(
-        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+        dict[
+            str,
+            dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None],
+        ]
     ).validate_python(dataset_statistics.node_type_to_property_to_statistics)
     dataset_statistics.relation_type_to_property_to_statistics = TypeAdapter(
-        dict[str, dict[str, SymbolicPropertyStatistics | DatasetStatisticsBase | None]]
+        dict[
+            str,
+            dict[str, SymbolicPropertyStatistics | NumericPropertyStatistics | None],
+        ]
     ).validate_python(dataset_statistics.relation_type_to_property_to_statistics)
     return dataset_statistics
 
@@ -441,6 +453,7 @@ class DatasetPublic(DatasetBase):
     id: int
     owner_id: int
     dataset_schema: DatasetSchemaPublic | None
+    statistics: DatasetStatistics | None
     graph_display_specifications: GraphDisplaySpecifications | None
     workflows: list["WorkflowPublic"]
 
