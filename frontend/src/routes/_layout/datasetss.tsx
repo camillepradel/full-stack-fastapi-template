@@ -42,7 +42,7 @@ function ItemsTableBody() {
           <Td>
             <UnorderedList>
               {dataset.workflows.map((workflow) => (
-                <ListItem>{workflow.description} - {workflow.state}</ListItem>
+                <ListItem key={workflow.id}>{workflow.description} - {workflow.state}</ListItem>
               ))}
             </UnorderedList>
           </Td>
