@@ -1,5 +1,9 @@
 export const $ApplyProcessor = {
 	properties: {
+		dataset_id: {
+	type: 'number',
+	isRequired: true,
+},
 		specifications: {
 	type: 'NetworkXProcessorSpecifications',
 	isRequired: true,
@@ -437,6 +441,75 @@ export const $ItemsPublic = {
 		count: {
 	type: 'number',
 	isRequired: true,
+},
+	},
+} as const;
+
+export const $Log = {
+	description: `An ORM representation of log data.`,
+	properties: {
+		id: {
+	type: 'string',
+	format: 'uuid',
+},
+		created: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		updated: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		name: {
+	type: 'string',
+	description: `The logger name.`,
+	isRequired: true,
+},
+		level: {
+	type: 'number',
+	description: `The log level.`,
+	isRequired: true,
+},
+		message: {
+	type: 'string',
+	description: `The log message.`,
+	isRequired: true,
+},
+		timestamp: {
+	type: 'string',
+	description: `The log timestamp.`,
+	isRequired: true,
+	format: 'date-time',
+},
+		flow_run_id: {
+	type: 'any-of',
+	description: `The flow run ID associated with the log.`,
+	contains: [{
+	type: 'string',
+	format: 'uuid',
+}, {
+	type: 'null',
+}],
+},
+		task_run_id: {
+	type: 'any-of',
+	description: `The task run ID associated with the log.`,
+	contains: [{
+	type: 'string',
+	format: 'uuid',
+}, {
+	type: 'null',
+}],
 },
 	},
 } as const;
@@ -944,8 +1017,42 @@ export const $ValidationError = {
 	},
 } as const;
 
+export const $WorkflowContent = {
+	properties: {
+		metadata: {
+	type: 'WorkflowPublic',
+	isRequired: true,
+},
+		logs: {
+	type: 'array',
+	contains: {
+		type: 'Log',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $WorkflowPublic = {
 	properties: {
+		created_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		updated_at: {
+	type: 'any-of',
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
 		type: {
 	type: 'WorkflowType',
 	isRequired: true,
@@ -957,6 +1064,26 @@ export const $WorkflowPublic = {
 		state: {
 	type: 'StateType',
 	isRequired: true,
+},
+		started_at: {
+	type: 'any-of',
+	description: `Timestamp when the workflow started (can be different from \`created_at\`).`,
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
+},
+		ended_at: {
+	type: 'any-of',
+	description: `Timestamp when the workflow ended.`,
+	contains: [{
+	type: 'string',
+	format: 'date-time',
+}, {
+	type: 'null',
+}],
 },
 		id: {
 	type: 'number',
@@ -981,4 +1108,20 @@ export const $WorkflowPublic = {
 export const $WorkflowType = {
 	type: 'Enum',
 	enum: ['build_dataset','run_processor',],
+} as const;
+
+export const $WorkflowsPublic = {
+	properties: {
+		data: {
+	type: 'array',
+	contains: {
+		type: 'WorkflowPublic',
+	},
+	isRequired: true,
+},
+		count: {
+	type: 'number',
+	isRequired: true,
+},
+	},
 } as const;

@@ -19,6 +19,9 @@ def _update_workflow_states_hook(_: Flow, run: FlowRun, state: State) -> None:
         try:
             workflow: Workflow = session.exec(statement).one()
             workflow.state = state.type
+            if state.is_final():
+                # could be nice to use run.end_time but value seems to be None
+                workflow.ended_at = state.timestamp
             session.add(workflow)
             session.commit()
         except NoResultFound:
@@ -85,6 +88,8 @@ def monitored_flow(
                     type=workflow_type,
                     description=description,
                     state=flow_run.state.type,
+                    started_at=flow_run.start_time,
+                    ended_at=flow_run.end_time,
                     owner_id=current_user_id,
                     related_dataset_id=related_object_id,
                     prefect_flow_run_id=flow_run.id,

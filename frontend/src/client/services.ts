@@ -2,7 +2,7 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,ApplyProcessor,DatasetContent,DatasetCreate,DatasetPublic,DatasetsPublic } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,ApplyProcessor,DatasetContent,DatasetCreate,DatasetPublic,DatasetsPublic,WorkflowContent,WorkflowsPublic } from './models';
 
 export type TDataLoginAccessToken = {
                 formData: Body_login_login_access_token
@@ -537,8 +537,7 @@ export type TDataReadDatasetContent = {
                 
             }
 export type TDataApplyProcessor = {
-                id: number
-requestBody: ApplyProcessor
+                requestBody: ApplyProcessor
                 
             }
 
@@ -641,20 +640,91 @@ id,
 	 */
 	public static applyProcessor(data: TDataApplyProcessor): CancelablePromise<unknown> {
 		const {
-id,
 requestBody,
 } = data;
 		return __request(OpenAPI, {
 			method: 'POST',
-			url: '/api/v1/datasets/{id}/apply_processor',
-			path: {
-				id
-			},
+			url: '/api/v1/datasets/apply_processor',
 			body: requestBody,
 			mediaType: 'application/json',
 			errors: {
 				422: `Validation Error`,
 			},
+		});
+	}
+
+}
+
+export type TDataReadWorkflows = {
+                limit?: number
+skip?: number
+                
+            }
+export type TDataReadWorkflowContent = {
+                id: number
+                
+            }
+
+export class WorkflowsService {
+
+	/**
+	 * Read Workflows
+	 * Retrieve workflows of current user.
+	 * @returns WorkflowsPublic Successful Response
+	 * @throws ApiError
+	 */
+	public static readWorkflows(data: TDataReadWorkflows = {}): CancelablePromise<WorkflowsPublic> {
+		const {
+limit = 100,
+skip = 0,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/workflows/',
+			query: {
+				skip, limit
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Workflow Content
+	 * Get information on a workflow.
+	 * @returns WorkflowContent Successful Response
+	 * @throws ApiError
+	 */
+	public static readWorkflowContent(data: TDataReadWorkflowContent): CancelablePromise<WorkflowContent> {
+		const {
+id,
+} = data;
+		return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/workflows/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Get Apply Processor Options
+	 * Get all options to define processor's parameters.
+ * 
+ * Returns:
+ * dict[str, Any]: The JSON schema for all options to define processor's parameters.
+	 * @returns unknown Successful Response
+	 * @throws ApiError
+	 */
+	public static getApplyProcessorOptions(): CancelablePromise<Record<string, unknown>> {
+				return __request(OpenAPI, {
+			method: 'GET',
+			url: '/api/v1/workflows/apply-processor-options/',
 		});
 	}
 

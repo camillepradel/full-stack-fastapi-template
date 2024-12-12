@@ -4,6 +4,7 @@ import { FaPlus } from "react-icons/fa"
 import AddUser from "../Admin/AddUser"
 import AddItem from "../Items/AddItem"
 import AddDataset from "../Datasets/AddDataset"
+import ApplyProcessorModal from "../Processors/ApplyProcessor"
 
 interface NavbarProps {
   type: string
@@ -13,6 +14,7 @@ const Navbar = ({ type }: NavbarProps) => {
   const addUserModal = useDisclosure()
   const addItemModal = useDisclosure()
   const addAddDatasetModal = useDisclosure()
+  const applyProcessorModal = useDisclosure()
 
   return (
     <>
@@ -28,13 +30,14 @@ const Navbar = ({ type }: NavbarProps) => {
           variant="primary"
           gap={1}
           fontSize={{ base: "sm", md: "inherit" }}
-          onClick={type === "User" ? addUserModal.onOpen : type === "Item" ?  addItemModal.onOpen : addAddDatasetModal.onOpen}
+          onClick={type === "User" ? addUserModal.onOpen : type === "Item" ?  addItemModal.onOpen : type === "Dataset" ?  addAddDatasetModal.onOpen : applyProcessorModal.onOpen}
         >
-          <Icon as={FaPlus} /> Add {type}
+          <Icon as={FaPlus} /> {type === "Processor" ? "Apply Processor" : "Add " + type}
         </Button>
         <AddUser isOpen={addUserModal.isOpen} onClose={addUserModal.onClose} />
         <AddItem isOpen={addItemModal.isOpen} onClose={addItemModal.onClose} />
         <AddDataset isOpen={addAddDatasetModal.isOpen} onClose={addAddDatasetModal.onClose} />
+        <ApplyProcessorModal isOpen={applyProcessorModal.isOpen} onClose={applyProcessorModal.onClose} />
       </Flex>
     </>
   )

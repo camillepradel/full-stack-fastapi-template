@@ -22,6 +22,8 @@ import { Route as LayoutGraphcytoscapeImport } from './routes/_layout/graph_cyto
 import { Route as LayoutDatasetssImport } from './routes/_layout/datasetss'
 import { Route as LayoutDatasetsImport } from './routes/_layout/datasets'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as LayoutWorkflowsIndexImport } from './routes/_layout/workflows/index'
+import { Route as LayoutWorkflowsIdImport } from './routes/_layout/workflows/$id'
 import { Route as LayoutGraphd3IdImport } from './routes/_layout/graph_d3/$id'
 
 // Create/Update Routes
@@ -78,6 +80,16 @@ const LayoutDatasetsRoute = LayoutDatasetsImport.update({
 
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutWorkflowsIndexRoute = LayoutWorkflowsIndexImport.update({
+  path: '/workflows/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutWorkflowsIdRoute = LayoutWorkflowsIdImport.update({
+  path: '/workflows/$id',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -138,6 +150,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutGraphd3IdImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/workflows/$id': {
+      preLoaderRoute: typeof LayoutWorkflowsIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/workflows/': {
+      preLoaderRoute: typeof LayoutWorkflowsIndexImport
+      parentRoute: typeof LayoutImport
+    }
   }
 }
 
@@ -153,6 +173,8 @@ export const routeTree = rootRoute.addChildren([
     LayoutSettingsRoute,
     LayoutIndexRoute,
     LayoutGraphd3IdRoute,
+    LayoutWorkflowsIdRoute,
+    LayoutWorkflowsIndexRoute,
   ]),
   LoginRoute,
   RecoverPasswordRoute,

@@ -23,15 +23,16 @@ def _apply_networkx_processor_pagerank(
     superuser_token_headers: dict[str, str],
 ) -> Response:
     apply_processor: ApplyProcessor = ApplyProcessor(
+        dataset_id=dataset_id,
         specifications=NetworkXProcessorSpecifications(
             algorithm_specifications=NetworkXPagerankSpecifications(
                 pagerank_property_name=pagerank_field_name,
                 directed=False,
             )
-        )
+        ),
     )
     response = client.post(
-        f"{settings.API_V1_STR}/datasets/{dataset_id}/apply_processor",
+        f"{settings.API_V1_STR}/datasets/apply_processor",
         headers=superuser_token_headers,
         json=apply_processor.model_dump(),
     )

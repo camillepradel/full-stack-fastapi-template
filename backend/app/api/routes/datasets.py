@@ -154,16 +154,15 @@ def get_create_options() -> dict[str, Any]:
     return json_schema
 
 
-@router.post("/{id}/apply_processor")
+@router.post("/apply_processor")
 def apply_processor(
     *,
     session: SessionDep,
     current_user: CurrentUser,
     apply_processor: ApplyProcessor,
-    id: int,
     background_tasks: BackgroundTasks,
 ) -> None:
-    dataset: Dataset | None = session.get(Dataset, id)
+    dataset: Dataset | None = session.get(Dataset, apply_processor.dataset_id)
     if not dataset:
         raise HTTPException(status_code=404, detail="Dataset not found")
     if not current_user.is_superuser and (dataset.owner_id != current_user.id):
@@ -172,7 +171,7 @@ def apply_processor(
     # run processor in background
     background_tasks.add_task(
         run_processor,
-        dataset_id=id,
+        dataset_id=apply_processor.dataset_id,
         apply_processor=apply_processor,
         session=session,
         current_user_id=current_user.id,

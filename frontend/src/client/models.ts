@@ -1,4 +1,5 @@
 export type ApplyProcessor = {
+	dataset_id: number;
 	specifications: NetworkXProcessorSpecifications;
 };
 
@@ -140,6 +141,41 @@ export type ItemUpdate = {
 export type ItemsPublic = {
 	data: Array<ItemPublic>;
 	count: number;
+};
+
+
+
+/**
+ * An ORM representation of log data.
+ */
+export type Log = {
+	id?: string;
+	created?: string | null;
+	updated?: string | null;
+	/**
+	 * The logger name.
+	 */
+	name: string;
+	/**
+	 * The log level.
+	 */
+	level: number;
+	/**
+	 * The log message.
+	 */
+	message: string;
+	/**
+	 * The log timestamp.
+	 */
+	timestamp: string;
+	/**
+	 * The flow run ID associated with the log.
+	 */
+	flow_run_id?: string | null;
+	/**
+	 * The task run ID associated with the log.
+	 */
+	task_run_id?: string | null;
 };
 
 
@@ -382,10 +418,27 @@ export type ValidationError = {
 
 
 
+export type WorkflowContent = {
+	metadata: WorkflowPublic;
+	logs: Array<Log>;
+};
+
+
+
 export type WorkflowPublic = {
+	created_at?: string | null;
+	updated_at?: string | null;
 	type: WorkflowType;
 	description: string;
 	state: StateType;
+	/**
+	 * Timestamp when the workflow started (can be different from `created_at`).
+	 */
+	started_at?: string | null;
+	/**
+	 * Timestamp when the workflow ended.
+	 */
+	ended_at?: string | null;
 	id: number;
 	owner_id: number;
 	related_dataset_id: number | null;
@@ -394,4 +447,11 @@ export type WorkflowPublic = {
 
 
 export type WorkflowType = 'build_dataset' | 'run_processor';
+
+
+
+export type WorkflowsPublic = {
+	data: Array<WorkflowPublic>;
+	count: number;
+};
 

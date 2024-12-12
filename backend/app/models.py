@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Generic, TypeVar
 
 from prefect.client.schemas import StateType
+from prefect.client.schemas.objects import Log
 from pydantic import TypeAdapter
 from sqlalchemy import DateTime, event, func
 from sqlmodel import JSON, Column, Field, Relationship, SQLModel
@@ -602,6 +603,7 @@ class NetworkXProcessorSpecifications(ProcessorSpecifications):
 
 
 class ApplyProcessor(SQLModel):
+    dataset_id: int
     specifications: NetworkXProcessorSpecifications  # | ...
 
 
@@ -611,11 +613,20 @@ class WorkflowType(str, Enum):
 
 
 # Shared properties
-class WorkflowBase(SQLModel):
+class WorkflowBase(TimestampedResource):
     type: WorkflowType
     description: str
     state: StateType
-    # TODO: add timestamp_start, timestamp_end
+    started_at: datetime | None = Field(
+        default=None,
+        description="Timestamp when the workflow started (can be different from `created_at`).",
+        sa_type=DateTime(timezone=True),
+    )
+    ended_at: datetime | None = Field(
+        default=None,
+        description="Timestamp when the workflow ended.",
+        sa_type=DateTime(timezone=True),
+    )
 
 
 # Database model, database table inferred from class name
@@ -636,3 +647,21 @@ class WorkflowPublic(WorkflowBase):
     id: int
     owner_id: int
     related_dataset_id: int | None
+
+
+class WorkflowsPublic(SQLModel):
+    data: list[WorkflowPublic]
+    count: int
+
+
+class WorkflowContent(SQLModel):
+    # `metadata` field is already used in SQLModel, so we use metadata_ here and rename the column and json field
+    metadata_: WorkflowPublic = Field(
+        sa_column=Column("metadata"),
+        # TODO: use directly json_schema_extra once this is solved: https://github.com/tiangolo/sqlmodel/discussions/780 / 833
+        schema_extra={
+            "validation_alias": "metadata",
+            "serialization_alias": "metadata",
+        },
+    )
+    logs: list[Log]
