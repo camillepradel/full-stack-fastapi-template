@@ -13,7 +13,7 @@ from app.models import (
     WorkflowPublic,
     WorkflowsPublic,
 )
-from app.prefect import get_flow_run_logs
+from app.utils_prefect import get_flow_run_logs
 
 router = APIRouter()
 

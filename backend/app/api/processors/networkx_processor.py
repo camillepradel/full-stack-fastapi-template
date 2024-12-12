@@ -4,6 +4,7 @@ import pandas as pd
 from prefect import get_run_logger
 from sqlmodel import Session
 
+from app.api.datasets.statistics import fill_up_property_to_statistics
 from app.api.kuzu.datatypes import KUZU_TO_PYTHON_TYPES
 from app.api.processors.processor import Processor
 from app.models import (
@@ -37,10 +38,12 @@ class NetworkXProcessor(Processor):
             logger.info("run pagerank")
             pageranks = nx.pagerank(G, alpha=alg_specs.alpha)
             pagerank_df = pd.DataFrame.from_dict(
-                pageranks, orient="index", columns=["pagerank"]
+                pageranks, orient="index", columns=[alg_specs.pagerank_property_name]
             )
 
-            logger.info("save result into graph")
+            logger.info(
+                "save result into graph and update dataset schema and statistics in database"
+            )
             for node_type in self.dataset.dataset_schema.node_types:
                 node_type_df = pagerank_df[
                     pagerank_df.index.str.startswith(f"{node_type.name}_")
@@ -65,24 +68,33 @@ class NetworkXProcessor(Processor):
                     + "{"
                     + node_type.primary_key.name
                     + ": id})\n"
-                    + f"ON MATCH SET n.{alg_specs.pagerank_property_name} = pagerank\n"
+                    + f"ON MATCH SET n.{alg_specs.pagerank_property_name} = {alg_specs.pagerank_property_name}\n"
                     + f"RETURN n.{node_type.primary_key.name} AS nodeId, n.{alg_specs.pagerank_property_name} AS pagerank;"
                 )
 
-            logger.info("update dataset schema in database")
-            for node_type in self.dataset.dataset_schema.node_types:
-                node_type.properties.append(
-                    NodeProperty(
-                        name=alg_specs.pagerank_property_name, type=PROPERTY_TYPE
+                # schema
+                node_property = NodeProperty(
+                    name=alg_specs.pagerank_property_name, type=PROPERTY_TYPE
+                )
+                node_type.properties.append(node_property)
+
+                # statistics
+                property_to_statistics = (
+                    self.dataset.statistics.get_or_create_node_property_to_statistics(
+                        node_type.name
                     )
                 )
+                fill_up_property_to_statistics(
+                    property_to_statistics, [node_property], node_type_df
+                )
 
-            # TODO: update dataset statistics in database
-
-            # below line is to force update of dataset in db
+            # below line is to force update of dataset, schema and statistics in db
             # TODO: this is a hack and we should find a better way
             self.dataset.dataset_schema.node_types = (
                 self.dataset.dataset_schema.node_types.copy()
+            )
+            self.dataset.statistics.node_type_to_property_to_statistics = (
+                self.dataset.statistics.node_type_to_property_to_statistics.copy()
             )
             session.add(self.dataset)
             session.commit()

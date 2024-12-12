@@ -344,6 +344,16 @@ class DatasetStatistics(DatasetStatisticsBase, table=True):
     ] = Field(default_factory=dict, sa_column=Column(JSON))
     # TODO: add statistics for node and relation types (with at least their counts)
 
+    def get_or_create_node_property_to_statistics(self, node_type_name: str):
+        if node_type_name not in self.node_type_to_property_to_statistics:
+            self.node_type_to_property_to_statistics[node_type_name] = {}
+        return self.node_type_to_property_to_statistics[node_type_name]
+
+    def get_or_create_relation_property_to_statistics(self, relation_type_name: str):
+        if relation_type_name not in self.relation_type_to_property_to_statistics:
+            self.relation_type_to_property_to_statistics[relation_type_name] = {}
+        return self.relation_type_to_property_to_statistics[relation_type_name]
+
 
 class DatasetStatisticsPublic(DatasetStatisticsBase):
     node_type_to_property_to_statistics: dict[
