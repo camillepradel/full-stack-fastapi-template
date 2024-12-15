@@ -18,12 +18,12 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { Suspense } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { DatasetsService } from "../../client"
-import ActionsMenu from "../../components/Common/ActionsMenu"
-import Navbar from "../../components/Common/Navbar"
+import { DatasetsService } from "../../../client"
+import ActionsMenu from "../../../components/Common/ActionsMenu"
+import Navbar from "../../../components/Common/Navbar"
 
-export const Route = createFileRoute("/_layout/datasetss")({
-  component: Datasetss,
+export const Route = createFileRoute("/_layout/datasets/")({
+  component: Datasets,
 })
 
 function ItemsTableBody() {
@@ -38,7 +38,7 @@ function ItemsTableBody() {
         <Tr key={dataset.id}>
           <Td>{dataset.id}</Td>
           <Td>{dataset.name}</Td>
-          <Td><Link to={'/graph_d3/$id'} params={{ id: dataset.id.toString() }}>D3</Link></Td>
+          <Td><Link to={'/datasets/$id'} params={{ id: dataset.id.toString() }}>Browse</Link></Td>
           <Td>
             <UnorderedList>
               {dataset.workflows.map((workflow) => (
@@ -100,7 +100,7 @@ function DatasetsTable() {
   )
 }
 
-function Datasetss() {
+function Datasets() {
   return (
     <Container maxW="full">
       <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>

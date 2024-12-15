@@ -8,6 +8,8 @@ export const Route = createFileRoute("/_layout/graph_cytoscape")({
   component: GraphCytoscape,
 })
 
+// TODO: either build this view or delete it
+
 
 function GraphDisplay() {
   const ref = useRef<HTMLDivElement>(null)

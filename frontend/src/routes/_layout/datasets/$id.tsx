@@ -8,7 +8,7 @@ import { D3DragEvent } from "d3";
 import { getProperty } from "dot-prop";
 import DatasetOverview from "../../../components/Datasets/DatasetOverview";
 
-export const Route = createFileRoute("/_layout/graph_d3/$id")({
+export const Route = createFileRoute("/_layout/datasets/$id")({
   component: GraphD3,
 });
 

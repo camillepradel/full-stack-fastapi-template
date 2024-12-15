@@ -19,12 +19,11 @@ import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
 import { Route as LayoutGraphcytoscapeImport } from './routes/_layout/graph_cytoscape'
-import { Route as LayoutDatasetssImport } from './routes/_layout/datasetss'
-import { Route as LayoutDatasetsImport } from './routes/_layout/datasets'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutWorkflowsIndexImport } from './routes/_layout/workflows/index'
+import { Route as LayoutDatasetsIndexImport } from './routes/_layout/datasets/index'
 import { Route as LayoutWorkflowsIdImport } from './routes/_layout/workflows/$id'
-import { Route as LayoutGraphd3IdImport } from './routes/_layout/graph_d3/$id'
+import { Route as LayoutDatasetsIdImport } from './routes/_layout/datasets/$id'
 
 // Create/Update Routes
 
@@ -68,16 +67,6 @@ const LayoutGraphcytoscapeRoute = LayoutGraphcytoscapeImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutDatasetssRoute = LayoutDatasetssImport.update({
-  path: '/datasetss',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
-const LayoutDatasetsRoute = LayoutDatasetsImport.update({
-  path: '/datasets',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
@@ -88,13 +77,18 @@ const LayoutWorkflowsIndexRoute = LayoutWorkflowsIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutDatasetsIndexRoute = LayoutDatasetsIndexImport.update({
+  path: '/datasets/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutWorkflowsIdRoute = LayoutWorkflowsIdImport.update({
   path: '/workflows/$id',
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutGraphd3IdRoute = LayoutGraphd3IdImport.update({
-  path: '/graph_d3/$id',
+const LayoutDatasetsIdRoute = LayoutDatasetsIdImport.update({
+  path: '/datasets/$id',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -122,14 +116,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/datasets': {
-      preLoaderRoute: typeof LayoutDatasetsImport
-      parentRoute: typeof LayoutImport
-    }
-    '/_layout/datasetss': {
-      preLoaderRoute: typeof LayoutDatasetssImport
-      parentRoute: typeof LayoutImport
-    }
     '/_layout/graph_cytoscape': {
       preLoaderRoute: typeof LayoutGraphcytoscapeImport
       parentRoute: typeof LayoutImport
@@ -146,12 +132,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/graph_d3/$id': {
-      preLoaderRoute: typeof LayoutGraphd3IdImport
+    '/_layout/datasets/$id': {
+      preLoaderRoute: typeof LayoutDatasetsIdImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/workflows/$id': {
       preLoaderRoute: typeof LayoutWorkflowsIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/datasets/': {
+      preLoaderRoute: typeof LayoutDatasetsIndexImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/workflows/': {
@@ -166,14 +156,13 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
-    LayoutDatasetsRoute,
-    LayoutDatasetssRoute,
     LayoutGraphcytoscapeRoute,
     LayoutItemsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
-    LayoutGraphd3IdRoute,
+    LayoutDatasetsIdRoute,
     LayoutWorkflowsIdRoute,
+    LayoutDatasetsIndexRoute,
     LayoutWorkflowsIndexRoute,
   ]),
   LoginRoute,
