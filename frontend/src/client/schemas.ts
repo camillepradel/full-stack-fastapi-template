@@ -114,6 +114,18 @@ export const $DatasetCreate = {
 	},
 } as const;
 
+export const $DatasetFilters = {
+	properties: {
+		node_filters: {
+	type: 'array',
+	contains: {
+		type: 'GraphElementFilter',
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
 export const $DatasetPublic = {
 	properties: {
 		name: {
@@ -323,6 +335,11 @@ export const $DlgkeAvailableDataset = {
 	enum: ['KGDatasetFB15k','KGDatasetWN18',],
 } as const;
 
+export const $FilterSelect = {
+	type: 'Enum',
+	enum: ['everything','nothing','custom',],
+} as const;
+
 export const $GraphDisplaySpecifications = {
 	properties: {
 		id: {
@@ -351,6 +368,23 @@ export const $GraphDisplaySpecifications = {
 }, {
 	type: 'null',
 }],
+},
+	},
+} as const;
+
+export const $GraphElementFilter = {
+	properties: {
+		element_type_name: {
+	type: 'string',
+	isRequired: true,
+},
+		select: {
+	type: 'FilterSelect',
+	isRequired: true,
+},
+		filter_value: {
+	type: 'RuleGroup',
+	isRequired: true,
 },
 	},
 } as const;
@@ -767,6 +801,45 @@ export const $RelationType = {
 		type: 'RelationProperty',
 	},
 	isRequired: true,
+},
+	},
+} as const;
+
+export const $Rule = {
+	properties: {
+		field: {
+	type: 'string',
+	isRequired: true,
+},
+		operator: {
+	type: 'string',
+	isRequired: true,
+},
+		value: {
+	properties: {
+	},
+	isRequired: true,
+},
+	},
+} as const;
+
+export const $RuleCombinator = {
+	type: 'Enum',
+	enum: ['and',],
+} as const;
+
+export const $RuleGroup = {
+	properties: {
+		combinator: {
+	type: 'RuleCombinator',
+	isRequired: true,
+},
+		rules: {
+	type: 'array',
+	contains: {
+		type: 'Rule',
+	},
+	default: [],
 },
 	},
 } as const;

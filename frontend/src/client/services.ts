@@ -2,24 +2,132 @@ import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
 
-import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,ApplyProcessor,DatasetContent,DatasetCreate,DatasetPublic,DatasetsPublic,WorkflowContent,WorkflowsPublic } from './models';
+import type { Body_login_login_access_token,Message,NewPassword,Token,UserPublic,UpdatePassword,UserCreate,UserRegister,UsersPublic,UserUpdate,UserUpdateMe,ItemCreate,ItemPublic,ItemsPublic,ItemUpdate,ApplyProcessor,DatasetContent,DatasetCreate,DatasetFilters,DatasetPublic,DatasetsPublic,WorkflowContent,WorkflowsPublic } from './models';
 
-export type TDataLoginAccessToken = {
-                formData: Body_login_login_access_token
-                
-            }
-export type TDataRecoverPassword = {
-                email: string
-                
-            }
-export type TDataResetPassword = {
-                requestBody: NewPassword
-                
-            }
-export type TDataRecoverPasswordHtmlContent = {
-                email: string
-                
-            }
+export type LoginData = {
+        LoginAccessToken: {
+                    formData: Body_login_login_access_token
+                    
+                };
+RecoverPassword: {
+                    email: string
+                    
+                };
+ResetPassword: {
+                    requestBody: NewPassword
+                    
+                };
+RecoverPasswordHtmlContent: {
+                    email: string
+                    
+                };
+    }
+
+export type UsersData = {
+        ReadUsers: {
+                    limit?: number
+skip?: number
+                    
+                };
+CreateUser: {
+                    requestBody: UserCreate
+                    
+                };
+UpdateUserMe: {
+                    requestBody: UserUpdateMe
+                    
+                };
+UpdatePasswordMe: {
+                    requestBody: UpdatePassword
+                    
+                };
+RegisterUser: {
+                    requestBody: UserRegister
+                    
+                };
+ReadUserById: {
+                    userId: number
+                    
+                };
+UpdateUser: {
+                    requestBody: UserUpdate
+userId: number
+                    
+                };
+DeleteUser: {
+                    userId: number
+                    
+                };
+    }
+
+export type UtilsData = {
+        TestEmail: {
+                    emailTo: string
+                    
+                };
+    }
+
+export type ItemsData = {
+        ReadItems: {
+                    limit?: number
+skip?: number
+                    
+                };
+CreateItem: {
+                    requestBody: ItemCreate
+                    
+                };
+ReadItem: {
+                    id: number
+                    
+                };
+UpdateItem: {
+                    id: number
+requestBody: ItemUpdate
+                    
+                };
+DeleteItem: {
+                    id: number
+                    
+                };
+    }
+
+export type DatasetsData = {
+        ReadDatasets: {
+                    limit?: number
+skip?: number
+                    
+                };
+CreateDataset: {
+                    requestBody: DatasetCreate
+                    
+                };
+ReadDataset: {
+                    id: number
+                    
+                };
+ReadDatasetContent: {
+                    id: number
+requestBody: DatasetFilters
+                    
+                };
+ApplyProcessor: {
+                    requestBody: ApplyProcessor
+                    
+                };
+    }
+
+export type WorkflowsData = {
+        ReadWorkflows: {
+                    limit?: number
+skip?: number
+                    
+                };
+ReadWorkflowContent: {
+                    id: number
+                    
+                };
+    }
 
 export class LoginService {
 
@@ -29,7 +137,7 @@ export class LoginService {
 	 * @returns Token Successful Response
 	 * @throws ApiError
 	 */
-	public static loginAccessToken(data: TDataLoginAccessToken): CancelablePromise<Token> {
+	public static loginAccessToken(data: LoginData['LoginAccessToken']): CancelablePromise<Token> {
 		const {
 formData,
 } = data;
@@ -63,7 +171,7 @@ formData,
 	 * @returns Message Successful Response
 	 * @throws ApiError
 	 */
-	public static recoverPassword(data: TDataRecoverPassword): CancelablePromise<Message> {
+	public static recoverPassword(data: LoginData['RecoverPassword']): CancelablePromise<Message> {
 		const {
 email,
 } = data;
@@ -85,7 +193,7 @@ email,
 	 * @returns Message Successful Response
 	 * @throws ApiError
 	 */
-	public static resetPassword(data: TDataResetPassword): CancelablePromise<Message> {
+	public static resetPassword(data: LoginData['ResetPassword']): CancelablePromise<Message> {
 		const {
 requestBody,
 } = data;
@@ -106,7 +214,7 @@ requestBody,
 	 * @returns string Successful Response
 	 * @throws ApiError
 	 */
-	public static recoverPasswordHtmlContent(data: TDataRecoverPasswordHtmlContent): CancelablePromise<string> {
+	public static recoverPasswordHtmlContent(data: LoginData['RecoverPasswordHtmlContent']): CancelablePromise<string> {
 		const {
 email,
 } = data;
@@ -124,41 +232,6 @@ email,
 
 }
 
-export type TDataReadUsers = {
-                limit?: number
-skip?: number
-                
-            }
-export type TDataCreateUser = {
-                requestBody: UserCreate
-                
-            }
-export type TDataUpdateUserMe = {
-                requestBody: UserUpdateMe
-                
-            }
-export type TDataUpdatePasswordMe = {
-                requestBody: UpdatePassword
-                
-            }
-export type TDataRegisterUser = {
-                requestBody: UserRegister
-                
-            }
-export type TDataReadUserById = {
-                userId: number
-                
-            }
-export type TDataUpdateUser = {
-                requestBody: UserUpdate
-userId: number
-                
-            }
-export type TDataDeleteUser = {
-                userId: number
-                
-            }
-
 export class UsersService {
 
 	/**
@@ -167,10 +240,10 @@ export class UsersService {
 	 * @returns UsersPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readUsers(data: TDataReadUsers = {}): CancelablePromise<UsersPublic> {
+	public static readUsers(data: UsersData['ReadUsers'] = {}): CancelablePromise<UsersPublic> {
 		const {
-limit = 100,
 skip = 0,
+limit = 100,
 } = data;
 		return __request(OpenAPI, {
 			method: 'GET',
@@ -190,7 +263,7 @@ skip = 0,
 	 * @returns UserPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static createUser(data: TDataCreateUser): CancelablePromise<UserPublic> {
+	public static createUser(data: UsersData['CreateUser']): CancelablePromise<UserPublic> {
 		const {
 requestBody,
 } = data;
@@ -224,7 +297,7 @@ requestBody,
 	 * @returns UserPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static updateUserMe(data: TDataUpdateUserMe): CancelablePromise<UserPublic> {
+	public static updateUserMe(data: UsersData['UpdateUserMe']): CancelablePromise<UserPublic> {
 		const {
 requestBody,
 } = data;
@@ -245,7 +318,7 @@ requestBody,
 	 * @returns Message Successful Response
 	 * @throws ApiError
 	 */
-	public static updatePasswordMe(data: TDataUpdatePasswordMe): CancelablePromise<Message> {
+	public static updatePasswordMe(data: UsersData['UpdatePasswordMe']): CancelablePromise<Message> {
 		const {
 requestBody,
 } = data;
@@ -266,7 +339,7 @@ requestBody,
 	 * @returns UserPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static registerUser(data: TDataRegisterUser): CancelablePromise<UserPublic> {
+	public static registerUser(data: UsersData['RegisterUser']): CancelablePromise<UserPublic> {
 		const {
 requestBody,
 } = data;
@@ -287,7 +360,7 @@ requestBody,
 	 * @returns UserPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readUserById(data: TDataReadUserById): CancelablePromise<UserPublic> {
+	public static readUserById(data: UsersData['ReadUserById']): CancelablePromise<UserPublic> {
 		const {
 userId,
 } = data;
@@ -309,10 +382,10 @@ userId,
 	 * @returns UserPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static updateUser(data: TDataUpdateUser): CancelablePromise<UserPublic> {
+	public static updateUser(data: UsersData['UpdateUser']): CancelablePromise<UserPublic> {
 		const {
-requestBody,
 userId,
+requestBody,
 } = data;
 		return __request(OpenAPI, {
 			method: 'PATCH',
@@ -334,7 +407,7 @@ userId,
 	 * @returns Message Successful Response
 	 * @throws ApiError
 	 */
-	public static deleteUser(data: TDataDeleteUser): CancelablePromise<Message> {
+	public static deleteUser(data: UsersData['DeleteUser']): CancelablePromise<Message> {
 		const {
 userId,
 } = data;
@@ -352,11 +425,6 @@ userId,
 
 }
 
-export type TDataTestEmail = {
-                emailTo: string
-                
-            }
-
 export class UtilsService {
 
 	/**
@@ -365,7 +433,7 @@ export class UtilsService {
 	 * @returns Message Successful Response
 	 * @throws ApiError
 	 */
-	public static testEmail(data: TDataTestEmail): CancelablePromise<Message> {
+	public static testEmail(data: UtilsData['TestEmail']): CancelablePromise<Message> {
 		const {
 emailTo,
 } = data;
@@ -383,29 +451,6 @@ emailTo,
 
 }
 
-export type TDataReadItems = {
-                limit?: number
-skip?: number
-                
-            }
-export type TDataCreateItem = {
-                requestBody: ItemCreate
-                
-            }
-export type TDataReadItem = {
-                id: number
-                
-            }
-export type TDataUpdateItem = {
-                id: number
-requestBody: ItemUpdate
-                
-            }
-export type TDataDeleteItem = {
-                id: number
-                
-            }
-
 export class ItemsService {
 
 	/**
@@ -414,10 +459,10 @@ export class ItemsService {
 	 * @returns ItemsPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readItems(data: TDataReadItems = {}): CancelablePromise<ItemsPublic> {
+	public static readItems(data: ItemsData['ReadItems'] = {}): CancelablePromise<ItemsPublic> {
 		const {
-limit = 100,
 skip = 0,
+limit = 100,
 } = data;
 		return __request(OpenAPI, {
 			method: 'GET',
@@ -437,7 +482,7 @@ skip = 0,
 	 * @returns ItemPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static createItem(data: TDataCreateItem): CancelablePromise<ItemPublic> {
+	public static createItem(data: ItemsData['CreateItem']): CancelablePromise<ItemPublic> {
 		const {
 requestBody,
 } = data;
@@ -458,7 +503,7 @@ requestBody,
 	 * @returns ItemPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readItem(data: TDataReadItem): CancelablePromise<ItemPublic> {
+	public static readItem(data: ItemsData['ReadItem']): CancelablePromise<ItemPublic> {
 		const {
 id,
 } = data;
@@ -480,7 +525,7 @@ id,
 	 * @returns ItemPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static updateItem(data: TDataUpdateItem): CancelablePromise<ItemPublic> {
+	public static updateItem(data: ItemsData['UpdateItem']): CancelablePromise<ItemPublic> {
 		const {
 id,
 requestBody,
@@ -505,7 +550,7 @@ requestBody,
 	 * @returns Message Successful Response
 	 * @throws ApiError
 	 */
-	public static deleteItem(data: TDataDeleteItem): CancelablePromise<Message> {
+	public static deleteItem(data: ItemsData['DeleteItem']): CancelablePromise<Message> {
 		const {
 id,
 } = data;
@@ -523,24 +568,6 @@ id,
 
 }
 
-export type TDataReadDatasets = {
-                limit?: number
-skip?: number
-                
-            }
-export type TDataCreateDataset = {
-                requestBody: DatasetCreate
-                
-            }
-export type TDataReadDatasetContent = {
-                id: number
-                
-            }
-export type TDataApplyProcessor = {
-                requestBody: ApplyProcessor
-                
-            }
-
 export class DatasetsService {
 
 	/**
@@ -549,10 +576,10 @@ export class DatasetsService {
 	 * @returns DatasetsPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readDatasets(data: TDataReadDatasets = {}): CancelablePromise<DatasetsPublic> {
+	public static readDatasets(data: DatasetsData['ReadDatasets'] = {}): CancelablePromise<DatasetsPublic> {
 		const {
-limit = 100,
 skip = 0,
+limit = 100,
 } = data;
 		return __request(OpenAPI, {
 			method: 'GET',
@@ -580,7 +607,7 @@ skip = 0,
 	 * @returns DatasetPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static createDataset(data: TDataCreateDataset): CancelablePromise<DatasetPublic> {
+	public static createDataset(data: DatasetsData['CreateDataset']): CancelablePromise<DatasetPublic> {
 		const {
 requestBody,
 } = data;
@@ -596,21 +623,46 @@ requestBody,
 	}
 
 	/**
-	 * Read Dataset Content
-	 * Get dataset content (nodes and relations) by ID.
-	 * @returns DatasetContent Successful Response
+	 * Read Dataset
+	 * Get dataset by ID.
+	 * @returns DatasetPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readDatasetContent(data: TDataReadDatasetContent): CancelablePromise<DatasetContent> {
+	public static readDataset(data: DatasetsData['ReadDataset']): CancelablePromise<DatasetPublic> {
 		const {
 id,
 } = data;
 		return __request(OpenAPI, {
 			method: 'GET',
+			url: '/api/v1/datasets/{id}',
+			path: {
+				id
+			},
+			errors: {
+				422: `Validation Error`,
+			},
+		});
+	}
+
+	/**
+	 * Read Dataset Content
+	 * Get dataset content (nodes and relations) by ID.
+	 * @returns DatasetContent Successful Response
+	 * @throws ApiError
+	 */
+	public static readDatasetContent(data: DatasetsData['ReadDatasetContent']): CancelablePromise<DatasetContent> {
+		const {
+id,
+requestBody,
+} = data;
+		return __request(OpenAPI, {
+			method: 'POST',
 			url: '/api/v1/datasets/{id}/content',
 			path: {
 				id
 			},
+			body: requestBody,
+			mediaType: 'application/json',
 			errors: {
 				422: `Validation Error`,
 			},
@@ -638,7 +690,7 @@ id,
 	 * @returns unknown Successful Response
 	 * @throws ApiError
 	 */
-	public static applyProcessor(data: TDataApplyProcessor): CancelablePromise<unknown> {
+	public static applyProcessor(data: DatasetsData['ApplyProcessor']): CancelablePromise<unknown> {
 		const {
 requestBody,
 } = data;
@@ -655,16 +707,6 @@ requestBody,
 
 }
 
-export type TDataReadWorkflows = {
-                limit?: number
-skip?: number
-                
-            }
-export type TDataReadWorkflowContent = {
-                id: number
-                
-            }
-
 export class WorkflowsService {
 
 	/**
@@ -673,10 +715,10 @@ export class WorkflowsService {
 	 * @returns WorkflowsPublic Successful Response
 	 * @throws ApiError
 	 */
-	public static readWorkflows(data: TDataReadWorkflows = {}): CancelablePromise<WorkflowsPublic> {
+	public static readWorkflows(data: WorkflowsData['ReadWorkflows'] = {}): CancelablePromise<WorkflowsPublic> {
 		const {
-limit = 100,
 skip = 0,
+limit = 100,
 } = data;
 		return __request(OpenAPI, {
 			method: 'GET',
@@ -696,7 +738,7 @@ skip = 0,
 	 * @returns WorkflowContent Successful Response
 	 * @throws ApiError
 	 */
-	public static readWorkflowContent(data: TDataReadWorkflowContent): CancelablePromise<WorkflowContent> {
+	public static readWorkflowContent(data: WorkflowsData['ReadWorkflowContent']): CancelablePromise<WorkflowContent> {
 		const {
 id,
 } = data;

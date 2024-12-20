@@ -38,6 +38,12 @@ export type DatasetCreate = {
 
 
 
+export type DatasetFilters = {
+	node_filters: Array<GraphElementFilter>;
+};
+
+
+
 export type DatasetPublic = {
 	name: string;
 	id: number;
@@ -101,10 +107,22 @@ export type DlgkeAvailableDataset = 'KGDatasetFB15k' | 'KGDatasetWN18';
 
 
 
+export type FilterSelect = 'everything' | 'nothing' | 'custom';
+
+
+
 export type GraphDisplaySpecifications = {
 	id?: number | null;
 	node_label_field_name?: string | null;
 	node_icons?: Record<string, string> | null;
+};
+
+
+
+export type GraphElementFilter = {
+	element_type_name: string;
+	select: FilterSelect;
+	filter_value: RuleGroup;
 };
 
 
@@ -314,6 +332,25 @@ export type RelationProperty = {
 export type RelationType = {
 	name: string;
 	properties: Array<RelationProperty>;
+};
+
+
+
+export type Rule = {
+	field: string;
+	operator: string;
+	value: unknown;
+};
+
+
+
+export type RuleCombinator = 'and';
+
+
+
+export type RuleGroup = {
+	combinator: RuleCombinator;
+	rules?: Array<Rule>;
 };
 
 

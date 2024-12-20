@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from datetime import datetime
 from enum import Enum
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from prefect.client.schemas import StateType
 from prefect.client.schemas.objects import Log
@@ -499,6 +499,38 @@ class DatasetContent(SQLModel):
     )
     relations: list[Relation]
     nodes: list[Node]
+
+
+class FilterSelect(str, Enum):
+    everything = "everything"
+    nothing = "nothing"
+    custom = "custom"
+
+
+class RuleCombinator(str, Enum):
+    AND = "and"
+
+
+class Rule(SQLModel):
+    field: str
+    operator: str
+    # TODO?: add type constraints on value depending on the field on which the rule is applied
+    value: Any
+
+
+class RuleGroup(SQLModel):
+    combinator: RuleCombinator
+    rules: list[Rule] = []
+
+
+class GraphElementFilter(SQLModel):
+    element_type_name: str
+    select: FilterSelect
+    filter_value: RuleGroup
+
+
+class DatasetFilters(SQLModel):
+    node_filters: list[GraphElementFilter]
 
 
 class FieldPattern(SQLModel):

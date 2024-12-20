@@ -58,7 +58,8 @@ class DatasetBuilder(ABC):
                 while table_info_result.has_next():
                     table_info_result_item = table_info_result.get_next()
                     property_name = table_info_result_item[1]
-                    property_type = table_info_result_item[2]
+                    # we use .upper() because type returned by kuzu can be lowercase
+                    property_type = table_info_result_item[2].upper()
                     is_primary_key = table_info_result_item[3]
                     properties.append(
                         NodeProperty(

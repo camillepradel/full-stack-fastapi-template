@@ -12,9 +12,10 @@ export const Route = createFileRoute("/_layout/workflows/$id")({
 // Handles data fetching, controls and calls GraphDisplay component
 function WorkflowContent() {
   const { id: workflow_id } = Route.useParams();
+  const workflowContentQueryParams = { id: parseInt(workflow_id) }
   const { data: workflowContent } = useSuspenseQuery({
-    queryKey: ["workflow-content"],
-    queryFn: () => WorkflowsService.readWorkflowContent({ id: parseInt(workflow_id) }),
+    queryKey: { ...workflowContentQueryParams as any, service: ["workflow-content"] },
+    queryFn: () => WorkflowsService.readWorkflowContent(workflowContentQueryParams),
   });
 
   return (

@@ -15,6 +15,7 @@ from app.models import (
     DatasetContent,
     DatasetCountSampling,
     DatasetCreate,
+    DatasetFilters,
     DatasetPublic,
     DatasetRatioSampling,
     DatasetsPublic,
@@ -55,9 +56,28 @@ def read_datasets(
     return DatasetsPublic(data=datasets, count=count)
 
 
-@router.get("/{id}/content", response_model=DatasetContent)
-def read_dataset_content(
+@router.get("/{id}", response_model=DatasetPublic)
+def read_dataset(
     session: SessionDep, current_user: CurrentUser, id: int
+) -> DatasetPublic:
+    """
+    Get dataset by ID.
+    """
+    dataset: Dataset | None = session.get(Dataset, id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+    if not current_user.is_superuser and (dataset.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+
+    return dataset
+
+
+@router.post("/{id}/content", response_model=DatasetContent)
+def read_dataset_content(
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: int,
+    filters: DatasetFilters,  # noqa: ARG001
 ) -> DatasetContent:
     """
     Get dataset content (nodes and relations) by ID.
