@@ -14,9 +14,12 @@ from app.models import (
     Dataset,
     DatasetCountSampling,
     DatasetCreate,
+    DatasetFilters,
     DatasetSplit,
     DglkeDatasetSpecifications,
     DlgkeAvailableDataset,
+    GraphElementFilter,
+    RuleGroup,
     StixDatasetSpecifications,
 )
 
@@ -95,11 +98,15 @@ def _get_datasets(
 
 
 def _get_dataset_content(
-    dataset_id: int, client: TestClient, superuser_token_headers: dict[str, str]
+    dataset_id: int,
+    filters: DatasetFilters,
+    client: TestClient,
+    superuser_token_headers: dict[str, str],
 ) -> Response:
-    response = client.get(
+    response = client.post(
         f"{settings.API_V1_STR}/datasets/{dataset_id}/content",
         headers=superuser_token_headers,
+        json=filters.model_dump(),
     )
     return response
 
@@ -275,46 +282,78 @@ def test_create_dglke_dataset(
     assert 1 < result.get_num_tuples() <= 18
 
 
-def test_get_datasets(
+def _assert_count_by_type(graph_elements, type, expected_count) -> None:
+    assert (
+        len([element for element in graph_elements if element["type"] == type])
+        == expected_count
+    )
+
+
+def test_get_dataset_content(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     stix_dataset_name = "test_stix_dataset"
     response = _create_stix_dataset(
         stix_dataset_name,
-        ["threat_actor_profile.json"],
+        ["threat_actor_profile.json", "defining-campaign-ta-is.json"],
         client,
         superuser_token_headers,
     )
     assert response.status_code == 200
     stix_dataset_id = response.json()["id"]
 
-    dglke_dataset_name = "test_dglke_dataset"
-    response = _create_dglke_dataset(
-        dglke_dataset_name,
-        client,
-        superuser_token_headers,
-        initial_dataset=DlgkeAvailableDataset.KGDatasetFB15k,
-        one_relation_type=True,
-        sampling_count=500,
-    )
-    assert response.status_code == 200
-    dglke_dataset_id = response.json()["id"]
+    for (
+        filters,
+        node_expected_count,
+        node_types_expected_counts,
+        relation_expected_count,
+    ) in [
+        (
+            DatasetFilters(node_filters=[]),
+            10,
+            [
+                ("ThreatActor", 2),
+                ("AttackPattern", 2),
+                ("Identity", 3),
+                ("IntrusionSet", 1),
+                ("Campaign", 2),
+            ],
+            19,
+        ),
+        (
+            DatasetFilters(
+                node_filters=[
+                    GraphElementFilter(
+                        element_type_name="ThreatActor",
+                        select="nothing",
+                        filter_value=RuleGroup(combinator="and", rules=[]),
+                    )
+                ]
+            ),
+            8,
+            [
+                ("ThreatActor", 0),
+                ("AttackPattern", 2),
+                ("Identity", 3),
+                ("IntrusionSet", 1),
+                ("Campaign", 2),
+            ],
+            10,
+        ),
+    ]:
+        response = _get_dataset_content(
+            stix_dataset_id, filters, client, superuser_token_headers
+        )
+        assert response.status_code == 200
+        content = response.json()
 
-    response = _get_datasets(client, superuser_token_headers)
-    assert response.status_code == 200
-    content = response.json()
-    assert len(content) >= 2
+        assert "nodes" in content
+        assert "relations" in content
 
-    # check that the previoulsy created datasets are in the returned datasets
-    stix_dataset_content = next(
-        (d for d in content["data"] if d["id"] == stix_dataset_id), None
-    )
-    assert stix_dataset_content
-    assert stix_dataset_content["name"] == stix_dataset_name
-    assert "owner_id" in stix_dataset_content
-    dglke_dataset_content = next(
-        (d for d in content["data"] if d["id"] == dglke_dataset_id), None
-    )
-    assert dglke_dataset_content
-    assert dglke_dataset_content["name"] == dglke_dataset_name
-    assert "owner_id" in dglke_dataset_content
+        nodes = content["nodes"]
+        assert len(nodes) == node_expected_count
+        for node_type, expected_count in node_types_expected_counts:
+            _assert_count_by_type(nodes, node_type, expected_count)
+
+        relations = content["relations"]
+        assert len(relations) == relation_expected_count

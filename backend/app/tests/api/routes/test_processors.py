@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.models import (
     ApplyProcessor,
     DatasetContent,
+    DatasetFilters,
     NetworkXPagerankSpecifications,
     NetworkXProcessorSpecifications,
     NodeType,
@@ -71,7 +72,7 @@ def test_networkx_processor_pagerank(
     )
     assert apply_networkx_processor_response.status_code == 200
     get_content_response: Response = _get_dataset_content(
-        dataset_id, client, superuser_token_headers
+        dataset_id, DatasetFilters(node_filters=[]), client, superuser_token_headers
     )
     assert get_content_response.status_code == 200
     content = get_content_response.json()

@@ -77,7 +77,7 @@ def read_dataset_content(
     session: SessionDep,
     current_user: CurrentUser,
     id: int,
-    filters: DatasetFilters,  # noqa: ARG001
+    filters: DatasetFilters,
 ) -> DatasetContent:
     """
     Get dataset content (nodes and relations) by ID.
@@ -88,7 +88,7 @@ def read_dataset_content(
     if not current_user.is_superuser and (dataset.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
 
-    dataset_content: DatasetContent = read_dataset_from_kuzu(dataset)
+    dataset_content: DatasetContent = read_dataset_from_kuzu(dataset, filters)
 
     return dataset_content
 
