@@ -129,11 +129,11 @@ const FiltersDescription = ({ nodeFilters }: FiltersDescriptionProps) => {
         {notTotallySelectedNodeFilters.length === 0 && <Code>Select all nodes</Code>}
       {notTotallySelectedNodeFilters.map(nodeFilter => (
           nodeFilter.select === "custom" &&
-          <Tooltip label={formatQuery(ruleGroupToQuery(nodeFilter.filter_value), 'spel')}><Tag><Text fontSize='xs'>[custom filter] </Text> {nodeFilter.element_type_name}</Tag></Tooltip>
+          <Tooltip key={nodeFilter.element_type_name} label={formatQuery(ruleGroupToQuery(nodeFilter.filter_value), 'spel')}><Tag><Text fontSize='xs'>[custom filter] </Text> {nodeFilter.element_type_name}</Tag></Tooltip>
       ))}
       {notTotallySelectedNodeFilters.map(nodeFilter => (
           nodeFilter.select === "nothing" &&
-          <Tag mx="4px"><s>{nodeFilter.element_type_name}</s></Tag>
+          <Tag key={nodeFilter.element_type_name} mx="4px"><s>{nodeFilter.element_type_name}</s></Tag>
       ))}
       </CardBody>
     </Card>
