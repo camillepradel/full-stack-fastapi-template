@@ -32,6 +32,8 @@ type NodeDatum = Node & d3.SimulationNodeDatum;
 
 type LinkDatum = Relation & d3.SimulationLinkDatum<NodeDatum>
 
+const LINK_INIT_STROKE_WIDTH = 1.5;
+
 function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: GraphDisplayProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -144,6 +146,9 @@ function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: Gr
       .attr("height", height)
       .attr("class", "max-w-full h-auto font-sans text-xs");
 
+    // Create a container group for zooming
+    const container = svg.append("g");
+
     const simulation = d3.forceSimulation<NodeDatum>(nodes)
       .force("link", d3.forceLink<NodeDatum, LinkDatum>(links).id(d => d.id))
       .force("charge", d3.forceManyBody().strength(-1000))
@@ -151,7 +156,7 @@ function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: Gr
       .force("y", d3.forceY());
 
     // Create arrow markers
-    const defs = svg.append("defs");
+    const defs = container.append("defs");
     relationTypes.forEach(type => {
       defs.append("marker")
         .attr("id", `arrow-${type}`)
@@ -167,18 +172,18 @@ function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: Gr
     });
 
     // Create links
-    const link = svg.append("g")
+    const link = container.append("g")
       .attr("class", "links")
       .attr("fill", "none")
-      .attr("stroke-width", 1.5)
       .selectAll("path")
       .data(links)
       .join("path")
       .attr("stroke", d => relationColor(d.type))
+      .attr("stroke-width", LINK_INIT_STROKE_WIDTH)
       .attr("marker-end", d => `url(${new URL(`#arrow-${d.type}`, location.href)})`);
 
     // Create nodes
-    const node = svg.append("g")
+    const node = container.append("g")
       .attr("class", "nodes")
       .attr("stroke-linecap", "round")
       .attr("stroke-linejoin", "round")
@@ -192,6 +197,22 @@ function GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: Gr
       link.attr("d", linkArc);
       node.attr("transform", d => `translate(${d.x},${d.y})`);
     });
+
+    // Add zoom and pan behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 10])
+      .on("zoom", (event) => {
+        container.attr("transform", event.transform);
+        // Make nodes, labels and edges scale as well, but not as much as the graph
+        const graphElementsScale = 1 / (1 + (event.transform.k-1) / 2 || 1);
+        node.selectAll("text").attr("transform", `scale(${graphElementsScale})`);
+        node.selectAll("image").attr("transform", `scale(${graphElementsScale})`);
+        node.selectAll("circle").attr("transform", `scale(${graphElementsScale})`);
+        link.classed("plop", true);
+        link.attr("stroke-width", LINK_INIT_STROKE_WIDTH*graphElementsScale);
+      });
+
+    svg.call(zoom);
 
     return () => {
       simulation.stop();
@@ -286,7 +307,7 @@ function Graph() {
   const { id: dataset_id } = Route.useParams();
   const datasetQueryParams = { id: parseInt(dataset_id) }
   const { data: dataset } = useSuspenseQuery({
-    queryKey: { ...datasetQueryParams as any, service: ["dataset"] },
+    queryKey: ["dataset", datasetQueryParams],
     queryFn: () => DatasetsService.readDataset(datasetQueryParams),
   });
   const [nodeFilters, setNodeFilters] = useState<GraphElementFilter[]>(
@@ -294,7 +315,7 @@ function Graph() {
   );
   const datasetContentQueryParams = { id: parseInt(dataset_id), requestBody: { node_filters: nodeFilters } }
   const { data: dataset_content } = useSuspenseQuery({
-    queryKey: { ...datasetContentQueryParams as any, service: ["dataset-content"] },
+    queryKey: ["dataset-content", datasetContentQueryParams],
     queryFn: () => DatasetsService.readDatasetContent(datasetContentQueryParams),
   });
 
