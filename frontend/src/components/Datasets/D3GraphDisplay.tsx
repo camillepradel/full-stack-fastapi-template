@@ -1,18 +1,67 @@
 import * as d3 from "d3";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Node, OpenAPI, Relation } from "../../client";
 import { D3DragEvent } from "d3";
 import { getProperty } from "dot-prop";
 import { GraphDisplayProps } from "./GraphDisplayProps";
+import { Box, Flex, Text, IconButton, VStack, Heading } from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 
 type NodeDatum = Node & d3.SimulationNodeDatum;
 
 type LinkDatum = Relation & d3.SimulationLinkDatum<NodeDatum>
 
+const GRAPH_HEIGHT = 600;
+const GRAPH_DEFAULT_WIDTH = 928;
 const LINK_INIT_STROKE_WIDTH = 1.5;
+
+type SelectedItem = {
+  type: 'node' | 'link';
+  data: NodeDatum | LinkDatum;
+} | null;
+
+const PropertiesPane = ({ item, onClose }: { item: SelectedItem; onClose: () => void }) => {
+  if (!item) return null;
+
+  const data = item.data.data || {};
+
+  return (
+    <Box
+      position="absolute"
+      bottom="4"
+      right="4"
+      bg="white"
+      p="4"
+      borderRadius="lg"
+      boxShadow="lg"
+      borderWidth="1px"
+      maxW="md"
+    >
+      <Flex justify="space-between" align="center" mb="2">
+        <Heading size="sm">{item.type === 'node' ? 'Node' : 'Link'} Properties</Heading>
+        <IconButton
+          icon={<CloseIcon />}
+          onClick={onClose}
+          aria-label="Close"
+          size="sm"
+          variant="ghost"
+        />
+      </Flex>
+      <VStack spacing="0.5" align="stretch">
+        {Object.entries(data).map(([key, value]) => (
+          <Flex key={key}>
+            <Text fontWeight="medium" mr="2">{key}:</Text>
+            <Text>{String(value)}</Text>
+          </Flex>
+        ))}
+      </VStack>
+    </Box>
+  );
+};
 
 function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: GraphDisplayProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
 
   const { nodes, links, nodeTypes, relationTypes } = useMemo(() => {
     const nodeTypes = Array.from(new Set(dataset_content.nodes.map(n => n.type)));
@@ -25,8 +74,8 @@ function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: 
   useEffect(() => {
     if (!svgRef.current) return;
 
-    const width = 928;
-    const height = 600;
+    const width = svgRef.current?.parentElement?.clientWidth || GRAPH_DEFAULT_WIDTH;
+    const height = svgRef.current?.parentElement?.clientHeight || GRAPH_HEIGHT;
     const nodeColor = d3.scaleOrdinal(nodeTypes, d3.schemeCategory10);
     const relationColor = d3.scaleOrdinal(relationTypes, d3.schemePastel1);
     const metadata = dataset_content.metadata
@@ -119,9 +168,16 @@ function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: 
 
     const svg = d3.select(svgRef.current)
       .attr("viewBox", [-width / 2, -height / 2, width, height])
-      .attr("width", width)
-      .attr("height", height)
-      .attr("class", "max-w-full h-auto font-sans text-xs");
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .style("font-family", "inherit")
+      .style("font-size", "0.75rem")
+      .on("click", (event) => {
+        // Close properties pane when clicking on empty space
+        if (event.target === svgRef.current) {
+          setSelectedItem(null);
+        }
+      });
 
     // Create a container group for zooming
     const container = svg.append("g");
@@ -157,7 +213,11 @@ function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: 
       .join("path")
       .attr("stroke", d => relationColor(d.type))
       .attr("stroke-width", LINK_INIT_STROKE_WIDTH)
-      .attr("marker-end", d => `url(${new URL(`#arrow-${d.type}`, location.href)})`);
+      .attr("marker-end", d => `url(${new URL(`#arrow-${d.type}`, location.href)})`)
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        setSelectedItem({ type: 'link', data: d });
+      });
 
     // Create nodes
     const node = container.append("g")
@@ -167,8 +227,12 @@ function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: 
       .selectAll<SVGGElement, NodeDatum>("g")
       .data(nodes)
       .join("g")
-      .call(drag(simulation) as any) // Type assertion needed due to D3's typing limitations
-      .call(displayNode);
+      .call(drag(simulation) as any)
+      .call(displayNode)
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        setSelectedItem({ type: 'node', data: d });
+      });
 
     simulation.on("tick", () => {
       link.attr("d", linkArc);
@@ -209,7 +273,12 @@ function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: 
     }
   }, [someNodeFrozen])
 
-  return <svg ref={svgRef} />;
+  return (
+    <Box position="relative" width="100%" height={GRAPH_HEIGHT}>
+      <svg ref={svgRef}></svg>
+      <PropertiesPane item={selectedItem} onClose={() => setSelectedItem(null)} />
+    </Box>
+  );
 }
 
 export default D3GraphDisplay
