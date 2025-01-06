@@ -102,11 +102,13 @@ def _get_dataset_content(
     filters: DatasetFilters,
     client: TestClient,
     superuser_token_headers: dict[str, str],
+    limit: int | None = None,
 ) -> Response:
     response = client.post(
         f"{settings.API_V1_STR}/datasets/{dataset_id}/content",
         headers=superuser_token_headers,
         json=filters.model_dump(),
+        params={"limit": limit} if limit else None,
     )
     return response
 
@@ -357,3 +359,50 @@ def test_get_dataset_content(
 
         relations = content["relations"]
         assert len(relations) == relation_expected_count
+
+
+def get_result_items_count(get_dataset_content_result):
+    source_ids = {rel["source"] for rel in get_dataset_content_result["relations"]}
+    node_ids = {
+        node["id"]
+        for node in get_dataset_content_result["nodes"]
+        if node["id"] not in source_ids
+    }
+    return len(get_dataset_content_result["relations"]) + len(node_ids)
+
+
+def test_get_dataset_content_with_limit(
+    client: TestClient, superuser_token_headers: dict[str, str]
+):
+    """Test that the limit parameter correctly limits the number of nodes returned."""
+    # Create a dataset first
+    response = _create_stix_dataset(
+        "test_dataset_limit",
+        ["threat_actor_profile.json", "defining-campaign-ta-is.json"],
+        client,
+        superuser_token_headers,
+    )
+    dataset_id = response.json()["id"]
+
+    # Get content with limit=2
+    limit = 2
+    response = _get_dataset_content(
+        dataset_id=dataset_id,
+        client=client,
+        superuser_token_headers=superuser_token_headers,
+        filters=DatasetFilters(node_filters=[], relation_filters=[]),
+        limit=limit,
+    )
+    result = response.json()
+    assert response.status_code == 200
+    assert get_result_items_count(result) == limit
+
+    # Compare with unlimited request
+    response_unlimited = _get_dataset_content(
+        dataset_id=dataset_id,
+        client=client,
+        superuser_token_headers=superuser_token_headers,
+        filters=DatasetFilters(node_filters=[], relation_filters=[]),
+    )
+    result_unlimited = response_unlimited.json()
+    assert get_result_items_count(result_unlimited) > limit

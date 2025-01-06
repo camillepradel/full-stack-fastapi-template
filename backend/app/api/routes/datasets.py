@@ -78,9 +78,12 @@ def read_dataset_content(
     current_user: CurrentUser,
     id: int,
     filters: DatasetFilters,
+    limit: int | None = None,
 ) -> DatasetContent:
     """
     Get dataset content (nodes and relations) by ID.
+    If limit is specified, returns at most that many result items (a result item being either a
+    relation or just a node for nodes which have no outgoing relations).
     """
     dataset: Dataset | None = session.get(Dataset, id)
     if not dataset:
@@ -88,7 +91,7 @@ def read_dataset_content(
     if not current_user.is_superuser and (dataset.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
 
-    dataset_content: DatasetContent = read_dataset_from_kuzu(dataset, filters)
+    dataset_content: DatasetContent = read_dataset_from_kuzu(dataset, filters, limit)
 
     return dataset_content
 

@@ -91,6 +91,7 @@ def _get_filters_constraints_on_node(
 def read_dataset_from_kuzu(
     dataset: Dataset,
     filters: DatasetFilters,
+    limit: int | None = None,
 ) -> DatasetContent:
     # Initialize database
     db_path: Path = Path(dataset.kuzu_path)
@@ -112,8 +113,10 @@ def read_dataset_from_kuzu(
     if constraints_on_nodes.constraints:
         query += "WHERE\n(\n"
         query += str(constraints_on_nodes).replace("__NODE__", "n2")
-        query += "\n)"
-    query += "\nRETURN *;"
+        query += "\n)\n"
+    query += "RETURN *\n"
+    if limit:
+        query += f"LIMIT {limit}\n"
     result = conn.execute(query)
     nodes: list[Node] = []
     node_ids: set[str] = set()
