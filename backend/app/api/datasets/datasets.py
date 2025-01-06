@@ -12,6 +12,7 @@ from app.models import (
     FilterSelect,
     GraphElementFilter,
     Node,
+    NodeType,
     Relation,
     RuleGroup,
 )
@@ -44,11 +45,22 @@ class QueryConstraintsGroup:
             )
 
 
-def _get_rule_group_constraints_on_node(rule_group: RuleGroup) -> QueryConstraintsGroup:
+def _get_rule_group_constraints_on_node(
+    rule_group: RuleGroup, node_type: NodeType
+) -> QueryConstraintsGroup:
+    def _format_rule_value(rule, node_type: NodeType):
+        property = next(
+            (prop for prop in node_type.properties if prop.name == rule.field), None
+        )
+        if property and property.type == "STRING":
+            return f"'{rule.value}'"
+        else:
+            return rule.value
+
     return QueryConstraintsGroup(
         combinator=rule_group.combinator.upper(),
         constraints=[
-            f"__NODE__.{rule.field} {rule.operator} {rule.value}"
+            f"__NODE__.{rule.field} {rule.operator} {_format_rule_value(rule, node_type)}"
             for rule in rule_group.rules
         ],
     )
@@ -81,9 +93,16 @@ def _get_filters_constraints_on_node(
             continue
         else:
             # node_filter.select is custom -> we take into account filter_value
-            result.constraints.append(f"LABEL(__NODE__)='{node_type.name}'")
             result.constraints.append(
-                _get_rule_group_constraints_on_node(node_filter.filter_value)
+                QueryConstraintsGroup(
+                    combinator="AND",
+                    constraints=[
+                        f"LABEL(__NODE__)='{node_type.name}'",
+                        _get_rule_group_constraints_on_node(
+                            node_filter.filter_value, node_type
+                        ),
+                    ],
+                )
             )
     return result
 
