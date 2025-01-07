@@ -281,4 +281,5 @@ function D3GraphDisplay({ dataset_content, someNodeFrozen, setSomeNodeFrozen }: 
   );
 }
 
-export default D3GraphDisplay
+export default D3GraphDisplay;
+export { GRAPH_HEIGHT };

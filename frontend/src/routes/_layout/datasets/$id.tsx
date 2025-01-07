@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import * as d3 from "d3";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 import {
   Button, Container, Heading, useDisclosure,
   Drawer,
@@ -10,14 +9,14 @@ import {
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
+  Box,
 } from "@chakra-ui/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { DatasetContent, DatasetPublic, DatasetsService, FilterSelect, GraphElementFilter, Node, NodeType, OpenAPI, Relation } from "../../../client";
-import { D3DragEvent } from "d3";
-import { getProperty } from "dot-prop";
+import { DatasetPublic, DatasetsData, DatasetsService, FilterSelect, GraphElementFilter, NodeType } from "../../../client";
 import DatasetOverview from "../../../components/Datasets/DatasetOverview";
 import DatasetFilters from "../../../components/Datasets/DatasetFilters";
-import D3GraphDisplay from "../../../components/Datasets/D3GraphDisplay";
+import D3GraphDisplay, { GRAPH_HEIGHT } from "../../../components/Datasets/D3GraphDisplay";
+import { GraphDisplayProps } from "../../../components/Datasets/GraphDisplayProps";
 
 export const Route = createFileRoute("/_layout/datasets/$id")({
   component: GraphD3,
@@ -90,7 +89,25 @@ function initNodeFilters(node_types: NodeType[], initValue: FilterSelect = "ever
   return nodeFilters;
 }
 
-// Handles data fetching, controls and calls GraphDisplay component
+interface GraphDataProps {
+  someNodeFrozen: boolean;
+  setSomeNodeFrozen: (someNodeFrozen: boolean) => void;
+  datasetContentQueryParams: DatasetsData['ReadDatasetContent'];
+}
+
+// Handles data fetching and calls GraphDisplay component
+function GraphData({ someNodeFrozen, setSomeNodeFrozen, datasetContentQueryParams }: GraphDataProps) {
+  const { data: dataset_content } = useSuspenseQuery({
+    queryKey: ["dataset-content", datasetContentQueryParams],
+    queryFn: () => DatasetsService.readDatasetContent(datasetContentQueryParams),
+  });
+
+  return (
+    <D3GraphDisplay dataset_content={dataset_content} someNodeFrozen={someNodeFrozen} setSomeNodeFrozen={setSomeNodeFrozen} />
+  );
+}
+
+// Handles metadata fetching, controls and calls GraphData component
 function Graph() {
   const { id: dataset_id } = Route.useParams();
   const datasetQueryParams = { id: parseInt(dataset_id) }
@@ -102,10 +119,6 @@ function Graph() {
     initNodeFilters(dataset.dataset_schema?.node_types ?? [])
   );
   const datasetContentQueryParams = { id: parseInt(dataset_id), requestBody: { node_filters: nodeFilters } }
-  const { data: dataset_content } = useSuspenseQuery({
-    queryKey: ["dataset-content", datasetContentQueryParams],
-    queryFn: () => DatasetsService.readDatasetContent(datasetContentQueryParams),
-  });
 
   const [someNodeFrozen, setSomeNodeFrozen] = useState(false);
 
@@ -116,12 +129,14 @@ function Graph() {
   return (
     <div>
       <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
-        {dataset_content.metadata.name}
+        {dataset.name}
       </Heading>
-      <D3GraphDisplay dataset_content={dataset_content} someNodeFrozen={someNodeFrozen} setSomeNodeFrozen={setSomeNodeFrozen} />
+      <Suspense fallback={<Box height={GRAPH_HEIGHT}>Loading graph data...</Box>}>
+        <GraphData someNodeFrozen={someNodeFrozen} setSomeNodeFrozen={setSomeNodeFrozen} datasetContentQueryParams={datasetContentQueryParams} />
+      </Suspense>
       <Button isDisabled={!someNodeFrozen} onClick={unfreezeNodes}>Unfreeze nodes</Button>
-      <FiltersDrawer dataset={dataset_content.metadata} nodeFilters={nodeFilters} setNodeFilters={setNodeFilters} initNodeFilters={initNodeFilters} />
-      <DatasetOverview dataset={dataset_content.metadata} />
+      <FiltersDrawer dataset={dataset} nodeFilters={nodeFilters} setNodeFilters={setNodeFilters} initNodeFilters={initNodeFilters} />
+      <DatasetOverview dataset={dataset} />
     </div>
   );
 }
