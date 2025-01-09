@@ -20,6 +20,8 @@ export type DatasetContent = {
 	metadata: DatasetPublic;
 	relations: Array<Relation>;
 	nodes: Array<Node>;
+	result_items_count: number;
+	result_items_total: number;
 };
 
 

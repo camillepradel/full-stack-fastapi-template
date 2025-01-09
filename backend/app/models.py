@@ -499,6 +499,8 @@ class DatasetContent(SQLModel):
     )
     relations: list[Relation]
     nodes: list[Node]
+    result_items_count: int
+    result_items_total: int
 
 
 class FilterSelect(str, Enum):

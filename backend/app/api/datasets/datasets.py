@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import kuzu
+import pandas as pd
 
 from app.models import (
     Dataset,
@@ -107,6 +108,27 @@ def _get_filters_constraints_on_node(
     return result
 
 
+def get_results_as_df(
+    conn: kuzu.Connection,
+    query_match_where: str,
+    limit: int | None = None,
+) -> pd.DataFrame:
+    query = query_match_where + "\nRETURN *\n"
+    if limit:
+        query += f"LIMIT {limit}\n"
+    result = conn.execute(query)
+    return result.get_as_df()
+
+
+def get_results_count(
+    conn: kuzu.Connection,
+    query_match_where: str,
+) -> int:
+    query = query_match_where + "\nRETURN COUNT(*)\n"
+    result = conn.execute(query)
+    return result.get_as_df().iloc[0, 0]
+
+
 def read_dataset_from_kuzu(
     dataset: Dataset,
     filters: DatasetFilters,
@@ -120,26 +142,22 @@ def read_dataset_from_kuzu(
     conn = kuzu.Connection(db)
 
     logger.info("retrieve content")
-    query: str = "MATCH (n1)\n"
+    query_match_where: str = "MATCH (n1)\n"
     constraints_on_nodes: QueryConstraintsGroup = _get_filters_constraints_on_node(
         dataset, filters
     )
     if constraints_on_nodes.constraints:
-        query += "WHERE\n(\n"
-        query += str(constraints_on_nodes).replace("__NODE__", "n1")
-        query += "\n)\n"
-    query += "OPTIONAL MATCH (n1)-[r]->(n2)\n"
+        query_match_where += "WHERE\n(\n"
+        query_match_where += str(constraints_on_nodes).replace("__NODE__", "n1")
+        query_match_where += "\n)\n"
+    query_match_where += "OPTIONAL MATCH (n1)-[r]->(n2)\n"
     if constraints_on_nodes.constraints:
-        query += "WHERE\n(\n"
-        query += str(constraints_on_nodes).replace("__NODE__", "n2")
-        query += "\n)\n"
-    query += "RETURN *\n"
-    if limit:
-        query += f"LIMIT {limit}\n"
-    result = conn.execute(query)
+        query_match_where += "WHERE\n(\n"
+        query_match_where += str(constraints_on_nodes).replace("__NODE__", "n2")
+        query_match_where += "\n)\n"
+    df = get_results_as_df(conn, query_match_where, limit)
     nodes: list[Node] = []
     node_ids: set[str] = set()
-    df = result.get_as_df()
     relations: list[Relation] = []
     for _, row in df.iterrows():
         # read nodes
@@ -176,8 +194,18 @@ def read_dataset_from_kuzu(
                 )
             )
 
+    result_items_count = df.shape[0]
+    if limit and result_items_count >= limit:
+        result_items_total = get_results_count(conn, query_match_where)
+    else:
+        result_items_total = result_items_count
+
     dataset_content = DatasetContent(
-        metadata=DatasetPublic.model_validate(dataset), relations=relations, nodes=nodes
+        metadata=DatasetPublic.model_validate(dataset),
+        relations=relations,
+        nodes=nodes,
+        result_items_count=result_items_count,
+        result_items_total=result_items_total,
     )
 
     return dataset_content

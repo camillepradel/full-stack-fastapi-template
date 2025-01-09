@@ -108,6 +108,7 @@ ReadDataset: {
                 };
 ReadDatasetContent: {
                     id: number
+limit?: number | null
 requestBody: DatasetFilters
                     
                 };
@@ -647,6 +648,8 @@ id,
 	/**
 	 * Read Dataset Content
 	 * Get dataset content (nodes and relations) by ID.
+ * If limit is specified, returns at most that many result items (a result item being either a
+ * relation or just a node for nodes which have no outgoing relations).
 	 * @returns DatasetContent Successful Response
 	 * @throws ApiError
 	 */
@@ -654,12 +657,16 @@ id,
 		const {
 id,
 requestBody,
+limit,
 } = data;
 		return __request(OpenAPI, {
 			method: 'POST',
 			url: '/api/v1/datasets/{id}/content',
 			path: {
 				id
+			},
+			query: {
+				limit
 			},
 			body: requestBody,
 			mediaType: 'application/json',

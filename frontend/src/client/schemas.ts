@@ -73,6 +73,14 @@ export const $DatasetContent = {
 	},
 	isRequired: true,
 },
+		result_items_count: {
+	type: 'number',
+	isRequired: true,
+},
+		result_items_total: {
+	type: 'number',
+	isRequired: true,
+},
 	},
 } as const;
 
